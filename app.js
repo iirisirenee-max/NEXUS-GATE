@@ -1,15 +1,9 @@
 /* =========================================================
-   NEXUS GATE v0.2
-   Spatial Task Engine
-========================================================= */
-
-
-/* =========================================================
-   STATE
+   NEXUS GATE v0.3
+   Spatial Task + Arrival Alert Engine
 ========================================================= */
 
 let currentLocation = null;
-
 let gpsWatcher = null;
 
 let gates = JSON.parse(
@@ -73,23 +67,19 @@ const accuracy =
 
 const radiusDescriptions = {
 
-    25:
-        "Basically at the spot",
+    25: "Basically at the spot",
 
-    50:
-        "Approaching the location",
+    50: "Approaching the location",
 
-    100:
-        "Somewhere around the place",
+    100: "Somewhere around the place",
 
-    250:
-        "Nearby neighborhood"
+    250: "Nearby neighborhood"
 
 };
 
 
 /* =========================================================
-   UPDATE RADIUS HINT
+   RADIUS HINT
 ========================================================= */
 
 function updateRadiusHint() {
@@ -152,13 +142,11 @@ function detectLocation() {
         },
 
         {
-
             enableHighAccuracy: true,
 
             timeout: 15000,
 
             maximumAge: 5000
-
         }
 
     );
@@ -342,12 +330,6 @@ function createGate() {
     };
 
 
-    /*
-       Because the gate is created at
-       the user's current location,
-       calculate its initial state immediately.
-    */
-
     const distance =
         calculateDistance(
 
@@ -373,7 +355,6 @@ function createGate() {
 
 
     gates.push(gate);
-
 
     saveGates();
 
@@ -404,12 +385,12 @@ function saveGates() {
 
 
 /* =========================================================
-   INITIAL RENDER
+   INITIAL UI
 ========================================================= */
 
-renderGates();
+updateRadiusHint();
 
-updateRadiusHint();/* =========================================================
+renderGates();/* =========================================================
    DISTANCE ENGINE
    Haversine Formula
 ========================================================= */
@@ -422,6 +403,7 @@ function calculateDistance(
 ) {
 
     const earthRadius = 6371000;
+
 
     const latDifference =
         toRadians(lat2 - lat1);
@@ -454,13 +436,15 @@ function calculateDistance(
 
 function toRadians(degrees) {
 
-    return degrees * Math.PI / 180;
+    return degrees *
+        Math.PI /
+        180;
 
 }
 
 
 /* =========================================================
-   CHECK SPATIAL GATES
+   CHECK ALL GATES
 ========================================================= */
 
 function checkGates() {
@@ -501,11 +485,12 @@ function checkGates() {
             distance <= gate.radius;
 
 
-        /* =========================
-           ARRIVE → OPEN
-        ========================= */
+        /* ARRIVE → OPEN */
 
-        if (isInside && !wasOpen) {
+        if (
+            isInside &&
+            !wasOpen
+        ) {
 
             gate.state =
                 "open";
@@ -517,11 +502,12 @@ function checkGates() {
         }
 
 
-        /* =========================
-           LEAVE → CLOSE
-        ========================= */
+        /* LEAVE → CLOSE */
 
-        else if (!isInside && wasOpen) {
+        else if (
+            !isInside &&
+            wasOpen
+        ) {
 
             gate.state =
                 "closed";
@@ -532,12 +518,6 @@ function checkGates() {
 
     });
 
-
-    /*
-       Always redraw because distance
-       changes even when gate state
-       doesn't.
-    */
 
     renderGates();
 
@@ -591,55 +571,44 @@ function renderGates() {
                 : null;
 
 
-        /*
-           Calculate how close the user
-           is relative to the activation
-           radius.
-
-           0%   = far away
-           100% = at / inside gate
-        */
-
-        let proximity =
-            0;
+        let proximity = 0;
 
 
         if (distance !== null) {
 
-            proximity =
-                Math.max(
-                    0,
-                    Math.min(
-                        100,
-                        ((gate.radius - distance)
-                            / gate.radius) * 100
-                    )
-                );
+            if (
+                distance <= gate.radius
+            ) {
+
+                proximity =
+                    (
+                        (gate.radius - distance)
+                        / gate.radius
+                    ) * 100;
+
+            }
+
+            else {
+
+                proximity =
+                    (
+                        gate.radius /
+                        distance
+                    ) * 100;
+
+            }
 
         }
 
 
-        /*
-           For visual purposes, an outside
-           gate still gets a small indicator
-           based on distance.
-        */
-
-        if (
-            distance !== null &&
-            distance > gate.radius
-        ) {
-
-            proximity =
-                Math.max(
-                    0,
-                    Math.min(
-                        100,
-                        (gate.radius / distance) * 100
-                    )
-                );
-
-        }
+        proximity =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    proximity
+                )
+            );
 
 
         const distanceText =
@@ -678,7 +647,6 @@ function renderGates() {
 
             <div class="gate-spatial">
 
-
                 <div class="spatial-stat">
 
                     <span>
@@ -704,7 +672,6 @@ function renderGates() {
 
                 </div>
 
-
             </div>
 
 
@@ -727,7 +694,7 @@ function renderGates() {
 
                     <div
                         class="proximity-fill"
-                        style="width: ${proximity}%">
+                        style="width:${proximity}%">
 
                     </div>
 
@@ -768,7 +735,7 @@ function renderGates() {
 
 
     /*
-       Attach buttons after rendering.
+       Attach complete buttons
     */
 
     document
@@ -795,7 +762,7 @@ function renderGates() {
 
 
 /* =========================================================
-   DISTANCE FORMATTING
+   DISTANCE FORMAT
 ========================================================= */
 
 function formatDistance(distance) {
@@ -807,7 +774,9 @@ function formatDistance(distance) {
     }
 
 
-    return `${(distance / 1000).toFixed(1)} km`;
+    return `${(
+        distance / 1000
+    ).toFixed(1)} km`;
 
 }
 
@@ -831,13 +800,11 @@ function getRadiusMode(radius) {
     };
 
 
-    return modes[radius] || "CUSTOM";
+    return modes[radius] ||
+        "CUSTOM";
 
-}
-
-
-/* =========================================================
-   GATE OPEN EVENT
+}/* =========================================================
+   ARRIVAL ALERT
 ========================================================= */
 
 function triggerGateOpen(gate) {
@@ -854,9 +821,31 @@ function triggerGateOpen(gate) {
         "var(--amber)";
 
 
-    /*
-       Browser notification.
-    */
+    /* =========================
+       PHONE VIBRATION
+    ========================= */
+
+    if ("vibrate" in navigator) {
+
+        navigator.vibrate([
+            250,
+            120,
+            250
+        ]);
+
+    }
+
+
+    /* =========================
+       ALERT SOUND
+    ========================= */
+
+    playAlertSound();
+
+
+    /* =========================
+       BROWSER NOTIFICATION
+    ========================= */
 
     if (
         "Notification" in window &&
@@ -866,10 +855,18 @@ function triggerGateOpen(gate) {
         try {
 
             new Notification(
-                "NEXUS GATE",
+                "NEXUS GATE OPEN",
                 {
+
                     body:
-                        gate.task
+                        `${gate.task}\nYou have arrived.`,
+
+                    tag:
+                        `nexus-${gate.id}`,
+
+                    renotify:
+                        true
+
                 }
             );
 
@@ -878,7 +875,7 @@ function triggerGateOpen(gate) {
         catch (error) {
 
             console.log(
-                "Notification unavailable:",
+                "Notification error:",
                 error
             );
 
@@ -887,9 +884,9 @@ function triggerGateOpen(gate) {
     }
 
 
-    /*
-       Return system status to normal.
-    */
+    /* =========================
+       RESET STATUS
+    ========================= */
 
     setTimeout(() => {
 
@@ -900,6 +897,90 @@ function triggerGateOpen(gate) {
             "GPS LOCKED";
 
     }, 3500);
+
+}
+
+
+/* =========================================================
+   ALERT SOUND
+   Web Audio API
+========================================================= */
+
+function playAlertSound() {
+
+    try {
+
+        const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+
+        if (!AudioContext) {
+            return;
+        }
+
+
+        const context =
+            new AudioContext();
+
+
+        const oscillator =
+            context.createOscillator();
+
+
+        const gain =
+            context.createGain();
+
+
+        oscillator.type =
+            "sine";
+
+
+        oscillator.frequency.value =
+            880;
+
+
+        gain.gain.setValueAtTime(
+            0.0001,
+            context.currentTime
+        );
+
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.18,
+            context.currentTime + 0.02
+        );
+
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            context.currentTime + 0.35
+        );
+
+
+        oscillator.connect(gain);
+
+        gain.connect(
+            context.destination
+        );
+
+
+        oscillator.start();
+
+        oscillator.stop(
+            context.currentTime + 0.35
+        );
+
+    }
+
+    catch (error) {
+
+        console.log(
+            "Audio unavailable:",
+            error
+        );
+
+    }
 
 }
 
@@ -953,13 +1034,13 @@ function completeGate(id) {
 function startTracking() {
 
     if (!navigator.geolocation) {
-
         return;
-
     }
 
 
-    if (gpsWatcher !== null) {
+    if (
+        gpsWatcher !== null
+    ) {
 
         navigator.geolocation.clearWatch(
             gpsWatcher
@@ -1008,7 +1089,7 @@ function startTracking() {
 
 
 /* =========================================================
-   NOTIFICATIONS
+   NOTIFICATION PERMISSION
 ========================================================= */
 
 function requestNotifications() {
@@ -1042,8 +1123,10 @@ function escapeHTML(text) {
     const div =
         document.createElement("div");
 
+
     div.textContent =
         text;
+
 
     return div.innerHTML;
 
@@ -1086,7 +1169,9 @@ taskInput.addEventListener(
     "keydown",
     event => {
 
-        if (event.key === "Enter") {
+        if (
+            event.key === "Enter"
+        ) {
 
             createGate();
 
@@ -1097,8 +1182,12 @@ taskInput.addEventListener(
 
 
 /* =========================================================
-   START NEXUS
+   INITIALIZE NEXUS
 ========================================================= */
+
+updateRadiusHint();
+
+renderGates();
 
 requestNotifications();
 
