@@ -165,7 +165,7 @@ body {
 
 
 /* =========================================================
-   MAIN CONTAINER
+   MAIN
 ========================================================= */
 
 .container {
@@ -436,7 +436,10 @@ button {
     font-size: 11px;
 
     opacity: 0.7;
-}/* =========================================================
+}
+
+
+/* =========================================================
    FORM
 ========================================================= */
 
@@ -548,6 +551,20 @@ select {
 
 
 /* =========================================================
+   RADIUS HINT
+========================================================= */
+
+.radius-hint {
+    min-height: 14px;
+
+    color: var(--stone);
+
+    font-size: 9px;
+
+    letter-spacing: 0.3px;
+
+    opacity: 0.9;
+}/* =========================================================
    ACTIVE GATES
 ========================================================= */
 
@@ -594,6 +611,10 @@ select {
 }
 
 
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
 .empty-state {
     grid-column: 1 / -1;
 
@@ -601,7 +622,8 @@ select {
 
     text-align: center;
 
-    border: 1px dashed rgba(200, 155, 60, 0.18);
+    border: 1px dashed
+        rgba(200, 155, 60, 0.18);
 
     border-radius: var(--radius);
 
@@ -643,7 +665,12 @@ select {
 .gate-card {
     padding: 20px;
 
-    background: rgba(37, 34, 28, 0.7);
+    background:
+        linear-gradient(
+            145deg,
+            rgba(37, 34, 28, 0.88),
+            rgba(18, 17, 15, 0.94)
+        );
 
     border: 1px solid var(--border);
 
@@ -655,7 +682,8 @@ select {
 
     transition:
         border-color 0.25s ease,
-        transform 0.25s ease;
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
 }
 
 
@@ -668,25 +696,32 @@ select {
 
 
 .gate-card.open {
-    border-color: var(--amber);
+    border-color:
+        rgba(242, 198, 109, 0.65);
 
     box-shadow:
-        0 0 35px rgba(242, 198, 109, 0.08);
+        0 0 35px
+        rgba(242, 198, 109, 0.08);
 }
 
 
 .gate-card.closed {
     border-color:
-        rgba(184, 107, 75, 0.45);
+        rgba(184, 107, 75, 0.35);
 }
 
+
+/* =========================================================
+   GATE STATE
+========================================================= */
 
 .gate-state {
     display: flex;
     align-items: center;
+
     gap: 7px;
 
-    margin-bottom: 16px;
+    margin-bottom: 15px;
 
     font-size: 8px;
     font-weight: 800;
@@ -701,7 +736,7 @@ select {
 
     border-radius: 50%;
 
-    background: var(--stone);
+    background: var(--locked);
 }
 
 
@@ -714,7 +749,10 @@ select {
     background: var(--amber);
 
     box-shadow:
-        0 0 10px rgba(242, 198, 109, 0.7);
+        0 0 10px
+        rgba(242, 198, 109, 0.7);
+
+    animation: pulse 1.8s infinite;
 }
 
 
@@ -728,6 +766,10 @@ select {
 }
 
 
+/* =========================================================
+   TASK
+========================================================= */
+
 .gate-task {
     font-family:
         Georgia,
@@ -737,34 +779,169 @@ select {
     font-size: 22px;
 
     line-height: 1.2;
+
+    word-break: break-word;
 }
 
+
+/* =========================================================
+   SPATIAL INFORMATION
+========================================================= */
+
+.gate-spatial {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 10px;
+
+    margin-top: 20px;
+}
+
+
+.spatial-stat {
+    padding: 12px;
+
+    background:
+        rgba(10, 10, 10, 0.45);
+
+    border: 1px solid
+        rgba(200, 155, 60, 0.1);
+
+    border-radius: 8px;
+}
+
+
+.spatial-stat span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: var(--stone);
+
+    font-size: 7px;
+    font-weight: 700;
+
+    letter-spacing: 1.4px;
+}
+
+
+.spatial-stat strong {
+    color: var(--ivory);
+
+    font-family: monospace;
+
+    font-size: 14px;
+
+    font-weight: 500;
+}
+
+
+.gate-card.open
+.spatial-stat:first-child strong {
+    color: var(--amber);
+}
+
+
+/* =========================================================
+   PROXIMITY BAR
+========================================================= */
+
+.proximity {
+    margin-top: 15px;
+}
+
+
+.proximity-label {
+    display: flex;
+    justify-content: space-between;
+
+    margin-bottom: 7px;
+
+    color: var(--stone);
+
+    font-family: monospace;
+
+    font-size: 8px;
+}
+
+
+.proximity-track {
+    width: 100%;
+    height: 3px;
+
+    overflow: hidden;
+
+    background:
+        rgba(140, 135, 122, 0.14);
+
+    border-radius: 10px;
+}
+
+
+.proximity-fill {
+    width: 0%;
+    height: 100%;
+
+    background: var(--gold);
+
+    border-radius: inherit;
+
+    transition:
+        width 0.6s ease,
+        background 0.3s ease;
+}
+
+
+.gate-card.open
+.proximity-fill {
+    background: var(--amber);
+
+    box-shadow:
+        0 0 8px
+        rgba(242, 198, 109, 0.45);
+}
+
+
+/* =========================================================
+   GATE META
+========================================================= */
 
 .gate-meta {
     display: flex;
     justify-content: space-between;
 
-    margin-top: 18px;
-    padding-top: 14px;
+    gap: 10px;
 
-    border-top: 1px solid rgba(200, 155, 60, 0.1);
+    margin-top: 15px;
+    padding-top: 13px;
+
+    border-top: 1px solid
+        rgba(200, 155, 60, 0.1);
 
     color: var(--stone);
 
-    font-size: 10px;
+    font-family: monospace;
+
+    font-size: 8px;
 }
 
+
+/* =========================================================
+   COMPLETE BUTTON
+========================================================= */
 
 .complete-button {
     width: 100%;
 
-    margin-top: 17px;
+    margin-top: 16px;
 
     padding: 10px;
 
     background: transparent;
 
-    border: 1px solid rgba(200, 155, 60, 0.25);
+    border: 1px solid
+        rgba(200, 155, 60, 0.25);
 
     color: var(--gold);
 
@@ -772,6 +949,11 @@ select {
     font-weight: 700;
 
     letter-spacing: 1.5px;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
 }
 
 
@@ -779,6 +961,8 @@ select {
     background: var(--gold-soft);
 
     border-color: var(--gold);
+
+    color: var(--amber);
 }
 
 
@@ -810,6 +994,8 @@ select {
     font-size: 9px;
 
     letter-spacing: 1px;
+
+    transition: color 0.3s ease;
 }
 
 
@@ -864,6 +1050,7 @@ select {
 
 footer {
     display: flex;
+
     justify-content: space-between;
     align-items: center;
 
@@ -882,7 +1069,9 @@ footer {
 
 .lifecycle {
     display: flex;
+
     gap: 10px;
+
     align-items: center;
 }
 
@@ -910,6 +1099,7 @@ footer {
         opacity: 0.45;
         transform: scale(0.8);
     }
+
 }
 
 
@@ -973,6 +1163,11 @@ footer {
     }
 
 
+    .gate-spatial {
+        grid-template-columns: 1fr 1fr;
+    }
+
+
     .coordinates {
         grid-template-columns: 1fr;
     }
@@ -992,6 +1187,7 @@ footer {
 
     footer {
         flex-direction: column;
+
         gap: 14px;
 
         text-align: center;
@@ -1016,8 +1212,7 @@ footer {
 @media (prefers-reduced-motion: reduce) {
 
     *,
-    *::before,
-    *::after {
+    *::before {
         animation-duration: 0.01ms !important;
 
         animation-iteration-count: 1 !important;
@@ -1027,4 +1222,4 @@ footer {
         transition-duration: 0.01ms !important;
     }
 
-}
+   }
