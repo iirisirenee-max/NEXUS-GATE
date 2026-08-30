@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <meta name="theme-color"
+          content="#0A0A0A">
+
+    <meta name="description"
+          content="NEXUS GATE — Remember things where they matter.">
+
+    <title>NEXUS GATE</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- ==============================
+         HEADER
+    =============================== -->
+
+    <header class="topbar">
+
+        <div class="brand">
+
+            <div class="brand-mark">
+                N
+            </div>
+
+            <div class="brand-info">
+
+                <h1>NEXUS GATE</h1>
+
+                <span>
+                    SPATIAL TASK ENGINE
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="system-status">
+
+            <span class="status-dot"></span>
+
+            <span id="systemStatus">
+                SYSTEM READY
+            </span>
+
+        </div>
+
+    </header>
+
+
+    <!-- ==============================
+         MAIN
+    =============================== -->
+
+    <main class="container">
+
+
+        <!-- HERO -->
+
+        <section class="hero">
+
+            <div class="hero-label">
+                LOCATION AWARENESS
+            </div>
+
+            <h2>
+                Remember things<br>
+                where they matter.
+            </h2>
+
+            <p>
+                Create a spatial gate. Enter its zone.
+                Let the environment trigger your memory.
+            </p>
+
+            <button
+                id="locateBtn"
+                class="primary-button"
+                type="button">
+
+                <span>◎</span>
+
+                DETECT MY LOCATION
+
+            </button>
+
+        </section>
+
+
+
+        <!-- ==============================
+             CREATE GATE
+        =============================== -->
+
+        <section class="panel">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        NEW GATE
+                    </span>
+
+                    <h3>
+                        Create a spatial task
+                    </h3>
+
+                </div>
+
+                <span class="panel-index">
+                    01
+                </span>
+
+            </div>
+
+
+            <div class="form">
+
+
+                <!-- TASK -->
+
+                <div class="field">
+
+                    <label for="taskInput">
+                        TASK
+                    </label>
+
+                    <input
+                        id="taskInput"
+                        type="text"
+                        placeholder="What should you remember?"
+                        autocomplete="off">
+
+                </div>
+
+
+
+                <!-- LOCATION -->
+
+                <div class="field">
+
+                    <label for="locationInput">
+                        LOCATION
+                    </label>
+
+                    <div class="location-field">
+
+                        <input
+                            id="locationInput"
+                            type="text"
+                            placeholder="Waiting for coordinates..."
+                            readonly>
+
+                        <button
+                            id="useLocationBtn"
+                            class="small-button"
+                            type="button">
+
+                            USE GPS
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- RADIUS -->
+
+                <div class="field">
+
+                    <label for="radiusInput">
+                        GATE RADIUS
+                    </label>
+
+                    <select id="radiusInput">
+
+                        <option value="25">
+                            25 METERS
+                        </option>
+
+                        <option
+                            value="50"
+                            selected>
+
+                            50 METERS
+
+                        </option>
+
+                        <option value="100">
+                            100 METERS
+                        </option>
+
+                        <option value="250">
+                            250 METERS
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                <!-- CREATE -->
+
+                <button
+                    id="createGateBtn"
+                    class="gold-button"
+                    type="button">
+
+                    CREATE GATE
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ==============================
+             ACTIVE GATES
+        =============================== -->
+
+        <section class="gates-section">
+
+
+            <div class="section-heading">
+
+                <div>
+
+                    <span class="eyebrow">
+                        SPATIAL NETWORK
+                    </span>
+
+                    <h3>
+                        Active Gates
+                    </h3>
+
+                </div>
+
+                <span
+                    id="gateCount"
+                    class="gate-count">
+
+                    0
+
+                </span>
+
+            </div>
+
+
+
+            <div
+                id="gatesContainer"
+                class="gates-container">
+
+
+                <!-- EMPTY STATE -->
+
+                <div
+                    id="emptyState"
+                    class="empty-state">
+
+                    <div class="empty-symbol">
+                        ◇
+                    </div>
+
+                    <h4>
+                        NO ACTIVE GATES
+                    </h4>
+
+                    <p>
+                        Create your first spatial task
+                        to establish a gate.
+                    </p>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ==============================
+             NEXUS ENGINE
+        =============================== -->
+
+        <section class="engine-panel">
+
+
+            <div class="engine-header">
+
+                <span class="eyebrow">
+                    NEXUS ENGINE
+                </span>
+
+                <span
+                    id="gpsStatus"
+                    class="gps-status">
+
+                    GPS OFFLINE
+
+                </span>
+
+            </div>
+
+
+
+            <div class="coordinates">
+
+
+                <div class="coordinate">
+
+                    <span>
+                        LATITUDE
+                    </span>
+
+                    <strong id="latitude">
+                        --.------
+                    </strong>
+
+                </div>
+
+
+
+                <div class="coordinate">
+
+                    <span>
+                        LONGITUDE
+                    </span>
+
+                    <strong id="longitude">
+                        --.------
+                    </strong>
+
+                </div>
+
+
+
+                <div class="coordinate">
+
+                    <span>
+                        ACCURACY
+                    </span>
+
+                    <strong id="accuracy">
+                        -- m
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+
+    <!-- ==============================
+         FOOTER
+    =============================== -->
+
+    <footer>
+
+        <div>
+            NEXUS GATE
+        </div>
+
+        <div class="lifecycle">
+
+            ARRIVE → OPEN
+
+            <span>•</span>
+
+            LEAVE → CLOSE
+
+            <span>•</span>
+
+            COMPLETE → DESTROY
+
+        </div>
+
+    </footer>
+
+
+
+    <!-- ==============================
+         JAVASCRIPT
+    =============================== -->
+
+    <script src="app.js"></script>
+
+</body>
+
+      </html>
