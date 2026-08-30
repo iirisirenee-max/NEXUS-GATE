@@ -1,6 +1,7 @@
 /* =========================================================
-   NEXUS GATE v0.3
-   Spatial Task + Arrival Alert Engine
+   NEXUS GATE
+   Spatial Task Engine
+   PART 1 / 3
 ========================================================= */
 
 let currentLocation = null;
@@ -9,6 +10,15 @@ let gpsWatcher = null;
 let gates = JSON.parse(
     localStorage.getItem("nexusGates") || "[]"
 );
+
+
+/* =========================================================
+   GPS STABILITY
+========================================================= */
+
+const GPS_HISTORY_SIZE = 5;
+
+let locationHistory = [];
 
 
 /* =========================================================
@@ -67,25 +77,35 @@ const accuracy =
 
 const radiusDescriptions = {
 
-    25: "Basically at the spot",
+    25:
+        "Exact location — GPS precision may vary",
 
-    50: "Approaching the location",
+    50:
+        "Close range",
 
-    100: "Somewhere around the place",
+    100:
+        "Around the location",
 
-    250: "Nearby neighborhood"
+    250:
+        "Nearby zone"
 
 };
 
 
 /* =========================================================
-   RADIUS HINT
+   UPDATE RADIUS HINT
 ========================================================= */
 
 function updateRadiusHint() {
 
+    if (!radiusHint) {
+        return;
+    }
+
+
     const radius =
         Number(radiusInput.value);
+
 
     radiusHint.textContent =
         radiusDescriptions[radius] ||
@@ -95,7 +115,7 @@ function updateRadiusHint() {
 
 
 /* =========================================================
-   GPS DETECTION
+   DETECT LOCATION
 ========================================================= */
 
 function detectLocation() {
@@ -116,6 +136,7 @@ function detectLocation() {
     systemStatus.textContent =
         "LOCATING...";
 
+
     gpsStatus.textContent =
         "ACQUIRING SIGNAL";
 
@@ -124,29 +145,33 @@ function detectLocation() {
 
         position => {
 
-            updateLocation(position);
-
-            checkGates();
+            processGPSPosition(
+                position
+            );
 
         },
+
 
         error => {
 
-            console.error(
-                "Location error:",
+            handleLocationError(
                 error
             );
 
-            handleLocationError(error);
-
         },
 
+
         {
-            enableHighAccuracy: true,
 
-            timeout: 15000,
+            enableHighAccuracy:
+                true,
 
-            maximumAge: 5000
+            timeout:
+                20000,
+
+            maximumAge:
+                0
+
         }
 
     );
@@ -155,16 +180,21 @@ function detectLocation() {
 
 
 /* =========================================================
-   UPDATE LOCATION
+   PROCESS GPS POSITION
 ========================================================= */
 
-function updateLocation(position) {
+function processGPSPosition(position) {
 
     const coords =
         position.coords;
 
 
-    currentLocation = {
+    /*
+       Store recent readings.
+       This helps reduce GPS jumping.
+    */
+
+    locationHistory.push({
 
         latitude:
             coords.latitude,
@@ -173,25 +203,132 @@ function updateLocation(position) {
             coords.longitude,
 
         accuracy:
-            coords.accuracy
+            coords.accuracy,
+
+        timestamp:
+            Date.now()
+
+    });
+
+
+    if (
+        locationHistory.length >
+        GPS_HISTORY_SIZE
+    ) {
+
+        locationHistory.shift();
+
+    }
+
+
+    const stableLocation =
+        getStableLocation();
+
+
+    if (!stableLocation) {
+        return;
+    }
+
+
+    currentLocation =
+        stableLocation;
+
+
+    updateLocationDisplay(
+        stableLocation
+    );
+
+
+    checkGates();
+
+}
+
+
+/* =========================================================
+   STABLE LOCATION
+========================================================= */
+
+function getStableLocation() {
+
+    if (
+        locationHistory.length === 0
+    ) {
+
+        return null;
+
+    }
+
+
+    /*
+       Average the recent coordinates.
+       Accuracy is averaged separately.
+    */
+
+    let latitudeSum = 0;
+
+    let longitudeSum = 0;
+
+    let accuracySum = 0;
+
+
+    locationHistory.forEach(
+        reading => {
+
+            latitudeSum +=
+                reading.latitude;
+
+            longitudeSum +=
+                reading.longitude;
+
+            accuracySum +=
+                reading.accuracy;
+
+        }
+    );
+
+
+    const count =
+        locationHistory.length;
+
+
+    return {
+
+        latitude:
+            latitudeSum / count,
+
+        longitude:
+            longitudeSum / count,
+
+        accuracy:
+            accuracySum / count
 
     };
 
+}
+
+
+/* =========================================================
+   UPDATE LOCATION DISPLAY
+========================================================= */
+
+function updateLocationDisplay(
+    location
+) {
 
     latitude.textContent =
-        coords.latitude.toFixed(6);
+        location.latitude.toFixed(6);
 
 
     longitude.textContent =
-        coords.longitude.toFixed(6);
+        location.longitude.toFixed(6);
 
 
     accuracy.textContent =
-        `${Math.round(coords.accuracy)} m`;
+        `${Math.round(location.accuracy)} m`;
 
 
     locationInput.value =
-        `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
+        `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
 
 
     systemStatus.textContent =
@@ -209,7 +346,7 @@ function updateLocation(position) {
 
 
 /* =========================================================
-   LOCATION ERRORS
+   LOCATION ERROR
 ========================================================= */
 
 function handleLocationError(error) {
@@ -218,7 +355,9 @@ function handleLocationError(error) {
         "var(--closed)";
 
 
-    if (error.code === 1) {
+    if (
+        error.code === 1
+    ) {
 
         systemStatus.textContent =
             "LOCATION DENIED";
@@ -228,7 +367,9 @@ function handleLocationError(error) {
 
     }
 
-    else if (error.code === 2) {
+    else if (
+        error.code === 2
+    ) {
 
         systemStatus.textContent =
             "LOCATION UNAVAILABLE";
@@ -238,7 +379,9 @@ function handleLocationError(error) {
 
     }
 
-    else if (error.code === 3) {
+    else if (
+        error.code === 3
+    ) {
 
         systemStatus.textContent =
             "LOCATION TIMEOUT";
@@ -319,10 +462,13 @@ function createGate() {
             radius,
 
         state:
-            "closed",
+            "open",
 
         distance:
             0,
+
+        accuracy:
+            currentLocation.accuracy,
 
         createdAt:
             new Date().toISOString()
@@ -330,31 +476,15 @@ function createGate() {
     };
 
 
-    const distance =
-        calculateDistance(
+    /*
+       A newly created gate starts OPEN
+       because you are currently inside it.
+    */
 
-            currentLocation.latitude,
+    gates.push(
+        gate
+    );
 
-            currentLocation.longitude,
-
-            gate.latitude,
-
-            gate.longitude
-
-        );
-
-
-    gate.distance =
-        Math.round(distance);
-
-
-    gate.state =
-        distance <= gate.radius
-            ? "open"
-            : "closed";
-
-
-    gates.push(gate);
 
     saveGates();
 
@@ -366,6 +496,13 @@ function createGate() {
 
     systemStatus.textContent =
         "GATE CREATED";
+
+
+    /*
+       Make sure tracking is active.
+    */
+
+    startTracking();
 
 }
 
@@ -385,7 +522,7 @@ function saveGates() {
 
 
 /* =========================================================
-   INITIAL UI
+   INITIAL SETUP
 ========================================================= */
 
 updateRadiusHint();
@@ -477,42 +614,77 @@ function checkGates() {
             Math.round(distance);
 
 
-        const wasOpen =
-            gate.state === "open";
+        /*
+           GPS uncertainty protection.
+
+           We don't want a gate to rapidly switch
+           when the GPS measurement is unreliable.
+        */
+
+        const gpsAccuracy =
+            currentLocation.accuracy;
 
 
-        const isInside =
-            distance <= gate.radius;
+        const buffer =
+            Math.max(
+                8,
+                Math.min(
+                    gpsAccuracy * 0.35,
+                    20
+                )
+            );
 
 
-        /* ARRIVE → OPEN */
+        /*
+           OPEN → CLOSED
+
+           We only close the gate after the user
+           is clearly outside the radius.
+        */
 
         if (
-            isInside &&
-            !wasOpen
-        ) {
-
-            gate.state =
-                "open";
-
-            changed = true;
-
-            triggerGateOpen(gate);
-
-        }
-
-
-        /* LEAVE → CLOSE */
-
-        else if (
-            !isInside &&
-            wasOpen
+            gate.state === "open" &&
+            distance >
+            gate.radius + buffer
         ) {
 
             gate.state =
                 "closed";
 
+
             changed = true;
+
+
+            triggerGateClosed(
+                gate
+            );
+
+        }
+
+
+        /*
+           CLOSED → OPEN
+
+           We allow the user back inside when
+           they are clearly within the zone.
+        */
+
+        else if (
+            gate.state === "closed" &&
+            distance <
+            gate.radius - buffer
+        ) {
+
+            gate.state =
+                "open";
+
+
+            changed = true;
+
+
+            triggerGateOpen(
+                gate
+            );
 
         }
 
@@ -558,7 +730,9 @@ function renderGates() {
     gates.forEach(gate => {
 
         const card =
-            document.createElement("article");
+            document.createElement(
+                "article"
+            );
 
 
         card.className =
@@ -566,7 +740,9 @@ function renderGates() {
 
 
         const distance =
-            Number.isFinite(gate.distance)
+            Number.isFinite(
+                gate.distance
+            )
                 ? gate.distance
                 : null;
 
@@ -583,7 +759,8 @@ function renderGates() {
                 proximity =
                     (
                         (gate.radius - distance)
-                        / gate.radius
+                        /
+                        gate.radius
                     ) * 100;
 
             }
@@ -614,7 +791,9 @@ function renderGates() {
         const distanceText =
             distance === null
                 ? "--"
-                : formatDistance(distance);
+                : formatDistance(
+                    distance
+                );
 
 
         const distanceLabel =
@@ -629,7 +808,9 @@ function renderGates() {
 
             <div class="gate-state">
 
-                <span class="gate-state-dot"></span>
+                <span
+                    class="gate-state-dot">
+                </span>
 
                 ${
                     gate.state === "open"
@@ -667,7 +848,9 @@ function renderGates() {
                     </span>
 
                     <strong>
-                        ${gate.radius} m
+                        ${formatDistance(
+                            gate.radius
+                        )}
                     </strong>
 
                 </div>
@@ -684,7 +867,9 @@ function renderGates() {
                     </span>
 
                     <span>
-                        ${Math.round(proximity)}%
+                        ${Math.round(
+                            proximity
+                        )}%
                     </span>
 
                 </div>
@@ -694,8 +879,10 @@ function renderGates() {
 
                     <div
                         class="proximity-fill"
-                        style="width:${proximity}%">
-
+                        style="
+                            width:${proximity}%;
+                        "
+                    >
                     </div>
 
                 </div>
@@ -706,12 +893,27 @@ function renderGates() {
             <div class="gate-meta">
 
                 <span>
-                    ${gate.latitude.toFixed(5)},
-                    ${gate.longitude.toFixed(5)}
+                    ${
+                        Number.isFinite(
+                            gate.latitude
+                        )
+                            ? gate.latitude.toFixed(5)
+                            : "--"
+                    },
+                    ${
+                        Number.isFinite(
+                            gate.longitude
+                        )
+                            ? gate.longitude.toFixed(5)
+                            : "--"
+                    }
                 </span>
 
+
                 <span>
-                    ${getRadiusMode(gate.radius)}
+                    ${getRadiusMode(
+                        gate.radius
+                    )}
                 </span>
 
             </div>
@@ -729,17 +931,21 @@ function renderGates() {
         `;
 
 
-        gatesContainer.appendChild(card);
+        gatesContainer.appendChild(
+            card
+        );
 
     });
 
 
     /*
-       Attach complete buttons
+       Complete buttons
     */
 
     document
-        .querySelectorAll(".complete-button")
+        .querySelectorAll(
+            ".complete-button"
+        )
         .forEach(button => {
 
             button.addEventListener(
@@ -750,6 +956,7 @@ function renderGates() {
                         Number(
                             button.dataset.gateId
                         );
+
 
                     completeGate(id);
 
@@ -762,14 +969,20 @@ function renderGates() {
 
 
 /* =========================================================
-   DISTANCE FORMAT
+   DISTANCE FORMATTER
 ========================================================= */
 
-function formatDistance(distance) {
+function formatDistance(
+    distance
+) {
 
-    if (distance < 1000) {
+    if (
+        distance < 1000
+    ) {
 
-        return `${Math.round(distance)} m`;
+        return `${Math.round(
+            distance
+        )} m`;
 
     }
 
@@ -785,17 +998,23 @@ function formatDistance(distance) {
    RADIUS MODE
 ========================================================= */
 
-function getRadiusMode(radius) {
+function getRadiusMode(
+    radius
+) {
 
     const modes = {
 
-        25: "EXACT",
+        25:
+            "EXACT",
 
-        50: "NEAR",
+        50:
+            "NEAR",
 
-        100: "AREA",
+        100:
+            "AREA",
 
-        250: "ZONE"
+        250:
+            "ZONE"
 
     };
 
@@ -803,8 +1022,8 @@ function getRadiusMode(radius) {
     return modes[radius] ||
         "CUSTOM";
 
-}/* =========================================================
-   ARRIVAL ALERT
+               }/* =========================================================
+   GATE OPEN ALERT
 ========================================================= */
 
 function triggerGateOpen(gate) {
@@ -812,18 +1031,9 @@ function triggerGateOpen(gate) {
     systemStatus.textContent =
         "GATE ACTIVATED";
 
-
     gpsStatus.textContent =
         "SPATIAL MATCH";
 
-
-    gpsStatus.style.color =
-        "var(--amber)";
-
-
-    /* =========================
-       PHONE VIBRATION
-    ========================= */
 
     if ("vibrate" in navigator) {
 
@@ -836,16 +1046,8 @@ function triggerGateOpen(gate) {
     }
 
 
-    /* =========================
-       ALERT SOUND
-    ========================= */
-
     playAlertSound();
 
-
-    /* =========================
-       BROWSER NOTIFICATION
-    ========================= */
 
     if (
         "Notification" in window &&
@@ -857,16 +1059,10 @@ function triggerGateOpen(gate) {
             new Notification(
                 "NEXUS GATE OPEN",
                 {
-
                     body:
                         `${gate.task}\nYou have arrived.`,
-
                     tag:
-                        `nexus-${gate.id}`,
-
-                    renotify:
-                        true
-
+                        `nexus-open-${gate.id}`
                 }
             );
 
@@ -884,9 +1080,76 @@ function triggerGateOpen(gate) {
     }
 
 
-    /* =========================
-       RESET STATUS
-    ========================= */
+    setTimeout(() => {
+
+        systemStatus.textContent =
+            "SYSTEM ONLINE";
+
+        gpsStatus.textContent =
+            "GPS LOCKED";
+
+    }, 3500);
+
+}
+
+
+/* =========================================================
+   GATE CLOSED ALERT
+========================================================= */
+
+function triggerGateClosed(gate) {
+
+    systemStatus.textContent =
+        "GATE CLOSED";
+
+    gpsStatus.textContent =
+        "ZONE EXITED";
+
+
+    if ("vibrate" in navigator) {
+
+        navigator.vibrate([
+            150,
+            100,
+            150
+        ]);
+
+    }
+
+
+    playAlertSound();
+
+
+    if (
+        "Notification" in window &&
+        Notification.permission === "granted"
+    ) {
+
+        try {
+
+            new Notification(
+                "NEXUS GATE CLOSED",
+                {
+                    body:
+                        `${gate.task}\nYou have left the zone.`,
+                    tag:
+                        `nexus-closed-${gate.id}`
+                }
+            );
+
+        }
+
+        catch (error) {
+
+            console.log(
+                "Notification error:",
+                error
+            );
+
+        }
+
+    }
+
 
     setTimeout(() => {
 
@@ -903,7 +1166,6 @@ function triggerGateOpen(gate) {
 
 /* =========================================================
    ALERT SOUND
-   Web Audio API
 ========================================================= */
 
 function playAlertSound() {
@@ -1054,32 +1316,32 @@ function startTracking() {
 
             position => {
 
-                updateLocation(position);
-
-                checkGates();
+                processGPSPosition(
+                    position
+                );
 
             },
 
 
             error => {
 
-                console.error(
-                    "GPS tracking error:",
+                handleLocationError(
                     error
                 );
-
-                handleLocationError(error);
 
             },
 
 
             {
 
-                enableHighAccuracy: true,
+                enableHighAccuracy:
+                    true,
 
-                maximumAge: 5000,
+                maximumAge:
+                    3000,
 
-                timeout: 15000
+                timeout:
+                    15000
 
             }
 
@@ -1089,7 +1351,7 @@ function startTracking() {
 
 
 /* =========================================================
-   NOTIFICATION PERMISSION
+   REQUEST NOTIFICATIONS
 ========================================================= */
 
 function requestNotifications() {
@@ -1101,13 +1363,23 @@ function requestNotifications() {
 
         Notification.requestPermission()
 
-            .catch(
-                error =>
-                    console.log(
-                        "Notification permission:",
-                        error
-                    )
-            );
+            .then(permission => {
+
+                console.log(
+                    "Notification permission:",
+                    permission
+                );
+
+            })
+
+            .catch(error => {
+
+                console.log(
+                    "Notification permission error:",
+                    error
+                );
+
+            });
 
     }
 
@@ -1121,7 +1393,9 @@ function requestNotifications() {
 function escapeHTML(text) {
 
     const div =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     div.textContent =
@@ -1192,5 +1466,3 @@ renderGates();
 requestNotifications();
 
 startTracking();
-
-checkGates();
