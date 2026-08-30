@@ -5,18 +5,23 @@
 
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-    <meta name="theme-color"
-          content="#0A0A0A">
+    <meta
+        name="theme-color"
+        content="#0A0A0A">
 
-    <meta name="description"
-          content="NEXUS GATE — Remember things where they matter.">
+    <meta
+        name="description"
+        content="NEXUS GATE — Remember things where they matter.">
 
     <title>NEXUS GATE</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link
+        rel="stylesheet"
+        href="style.css">
 
 </head>
 
@@ -24,9 +29,9 @@
 <body>
 
 
-    <!-- ==============================
+    <!-- =====================================================
          HEADER
-    =============================== -->
+    ====================================================== -->
 
     <header class="topbar">
 
@@ -63,16 +68,16 @@
 
 
 
-    <!-- ==============================
+    <!-- =====================================================
          MAIN
-    =============================== -->
+    ====================================================== -->
 
     <main class="container">
 
 
-        <!-- ==============================
+        <!-- =================================================
              HERO
-        =============================== -->
+        ================================================== -->
 
         <section class="hero">
 
@@ -108,12 +113,11 @@
 
 
 
-        <!-- ==============================
+        <!-- =================================================
              CREATE GATE
-        =============================== -->
+        ================================================== -->
 
         <section class="panel">
-
 
             <div class="panel-header">
 
@@ -137,17 +141,19 @@
             </div>
 
 
-
             <div class="form">
 
 
-                <!-- TASK -->
+                <!-- =========================================
+                     TASK
+                ========================================== -->
 
                 <div class="field">
 
                     <label for="taskInput">
                         TASK
                     </label>
+
 
                     <input
                         id="taskInput"
@@ -159,12 +165,113 @@
 
 
 
-                <!-- LOCATION -->
+                <!-- =========================================
+                     TRIGGER MODE
+                ========================================== -->
 
                 <div class="field">
 
+                    <label>
+                        TRIGGER MODE
+                    </label>
+
+
+                    <div class="trigger-modes">
+
+
+                        <button
+                            id="placeModeBtn"
+                            class="mode-button active"
+                            type="button"
+                            data-mode="place">
+
+                            <span class="mode-icon">
+                                ◎
+                            </span>
+
+                            <span class="mode-content">
+
+                                <strong>
+                                    NEAR A PLACE
+                                </strong>
+
+                                <small>
+                                    Trigger inside a location zone
+                                </small>
+
+                            </span>
+
+                        </button>
+
+
+
+                        <button
+                            id="travelModeBtn"
+                            class="mode-button"
+                            type="button"
+                            data-mode="travel">
+
+                            <span class="mode-icon">
+                                →
+                            </span>
+
+                            <span class="mode-content">
+
+                                <strong>
+                                    DISTANCE TRAVELLED
+                                </strong>
+
+                                <small>
+                                    Trigger after travelling a distance
+                                </small>
+
+                            </span>
+
+                        </button>
+
+
+
+                        <button
+                            id="smartModeBtn"
+                            class="mode-button"
+                            type="button"
+                            data-mode="smart">
+
+                            <span class="mode-icon">
+                                ✦
+                            </span>
+
+                            <span class="mode-content">
+
+                                <strong>
+                                    SMART
+                                </strong>
+
+                                <small>
+                                    Describe the location naturally
+                                </small>
+
+                            </span>
+
+                        </button>
+
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =========================================
+                     LOCATION
+                ========================================== -->
+
+                <div
+                    id="locationField"
+                    class="field">
+
                     <label for="locationInput">
-                        LOCATION
+                        START LOCATION
                     </label>
 
 
@@ -192,56 +299,87 @@
 
 
 
-                <!-- RADIUS -->
+                <!-- =========================================
+                     SMART LOCATION
+                ========================================== -->
 
-                <div class="field">
+                <div
+                    id="smartField"
+                    class="field hidden">
 
-                    <label for="radiusInput">
-                        ACTIVATION RANGE
+                    <label for="smartInput">
+                        DESCRIBE THE PLACE
                     </label>
 
 
-                    <select id="radiusInput">
-
-                        <option value="25">
-                            25M — EXACT
-                        </option>
-
-
-                        <option
-                            value="50"
-                            selected>
-
-                            50M — NEAR
-
-                        </option>
+                    <input
+                        id="smartInput"
+                        type="text"
+                        placeholder="e.g. near the airport"
+                        autocomplete="off">
 
 
-                        <option value="100">
-                            100M — AREA
-                        </option>
-
-
-                        <option value="250">
-                            250M — ZONE
-                        </option>
-
-                    </select>
-
-
-                    <span
-                        id="radiusHint"
-                        class="radius-hint">
-
-                        Approaching the location
-
+                    <span class="field-hint">
+                        NEXUS will interpret the location.
                     </span>
 
                 </div>
 
 
 
-                <!-- CREATE -->
+                <!-- =========================================
+                     DISTANCE
+                ========================================== -->
+
+                <div
+                    id="distanceField"
+                    class="field">
+
+                    <label>
+                        ACTIVATION DISTANCE
+                    </label>
+
+
+                    <div class="distance-row">
+
+
+                        <input
+                            id="distanceInput"
+                            type="number"
+                            min="1"
+                            step="0.1"
+                            value="25"
+                            placeholder="25">
+
+
+                        <select
+                            id="distanceUnit">
+
+                            <option value="m">
+                                METERS
+                            </option>
+
+                            <option value="km">
+                                KILOMETERS
+                            </option>
+
+                        </select>
+
+
+                    </div>
+
+
+                    <span
+                        id="radiusHint"
+                        class="field-hint">
+
+                        Exact location — GPS precision may vary
+
+                    </span>
+
+                </div>                <!-- =========================================
+                     CREATE GATE
+                ========================================== -->
 
                 <button
                     id="createGateBtn"
@@ -258,9 +396,9 @@
 
 
 
-        <!-- ==============================
+        <!-- =================================================
              ACTIVE GATES
-        =============================== -->
+        ================================================== -->
 
         <section class="gates-section">
 
@@ -320,15 +458,16 @@
 
                 </div>
 
+
             </div>
 
         </section>
 
 
 
-        <!-- ==============================
+        <!-- =================================================
              NEXUS ENGINE
-        =============================== -->
+        ================================================== -->
 
         <section class="engine-panel">
 
@@ -355,8 +494,6 @@
             <div class="coordinates">
 
 
-                <!-- LATITUDE -->
-
                 <div class="coordinate">
 
                     <span>
@@ -371,8 +508,6 @@
                 </div>
 
 
-
-                <!-- LONGITUDE -->
 
                 <div class="coordinate">
 
@@ -389,8 +524,6 @@
 
 
 
-                <!-- ACCURACY -->
-
                 <div class="coordinate">
 
                     <span>
@@ -404,17 +537,20 @@
 
                 </div>
 
+
             </div>
 
+
         </section>
+
 
     </main>
 
 
 
-    <!-- ==============================
+    <!-- =====================================================
          FOOTER
-    =============================== -->
+    ====================================================== -->
 
     <footer>
 
@@ -441,9 +577,9 @@
 
 
 
-    <!-- ==============================
+    <!-- =====================================================
          JAVASCRIPT
-    =============================== -->
+    ====================================================== -->
 
     <script src="app.js"></script>
 
