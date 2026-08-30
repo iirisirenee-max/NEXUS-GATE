@@ -15,16 +15,9 @@ let gpsWatcher = null;
 
 let selectedMode = "place";
 
-let locationHistory = [];
+let gpsHistory = [];
 
-let lastGPSPoint = null;
-
-
-/* =========================================================
-   CONSTANTS
-========================================================= */
-
-const GPS_HISTORY_SIZE = 5;
+const MAX_GPS_HISTORY = 3;
 
 
 /* =========================================================
@@ -39,10 +32,14 @@ try {
         localStorage.getItem("nexusGates") || "[]"
     );
 
+    if (!Array.isArray(gates)) {
+        gates = [];
+    }
+
 } catch (error) {
 
     console.log(
-        "Could not load saved gates:",
+        "NEXUS: Could not load saved gates.",
         error
     );
 
@@ -52,110 +49,161 @@ try {
 
 
 /* =========================================================
-   ELEMENTS
+   ELEMENT HELPERS
 ========================================================= */
 
-const locateBtn =
-    document.getElementById("locateBtn");
+function getElement(id) {
 
-const useLocationBtn =
-    document.getElementById("useLocationBtn");
+    return document.getElementById(id);
 
-const createGateBtn =
-    document.getElementById("createGateBtn");
-
-const taskInput =
-    document.getElementById("taskInput");
-
-const locationInput =
-    document.getElementById("locationInput");
-
-const smartInput =
-    document.getElementById("smartInput");
-
-const distanceInput =
-    document.getElementById("distanceInput");
-
-const distanceUnit =
-    document.getElementById("distanceUnit");
-
-const radiusHint =
-    document.getElementById("radiusHint");
-
-const locationField =
-    document.getElementById("locationField");
-
-const smartField =
-    document.getElementById("smartField");
-
-const distanceField =
-    document.getElementById("distanceField");
-
-const placeModeBtn =
-    document.getElementById("placeModeBtn");
-
-const travelModeBtn =
-    document.getElementById("travelModeBtn");
-
-const smartModeBtn =
-    document.getElementById("smartModeBtn");
-
-const gatesContainer =
-    document.getElementById("gatesContainer");
-
-const emptyState =
-    document.getElementById("emptyState");
-
-const gateCount =
-    document.getElementById("gateCount");
-
-const systemStatus =
-    document.getElementById("systemStatus");
-
-const gpsStatus =
-    document.getElementById("gpsStatus");
-
-const latitude =
-    document.getElementById("latitude");
-
-const longitude =
-    document.getElementById("longitude");
-
-const accuracy =
-    document.getElementById("accuracy");
+}
 
 
 /* =========================================================
-   TRIGGER MODE
+   MAIN ELEMENTS
+========================================================= */
+
+const locateBtn =
+    getElement("locateBtn");
+
+const useLocationBtn =
+    getElement("useLocationBtn");
+
+const createGateBtn =
+    getElement("createGateBtn");
+
+const taskInput =
+    getElement("taskInput");
+
+const locationInput =
+    getElement("locationInput");
+
+const smartInput =
+    getElement("smartInput");
+
+const distanceInput =
+    getElement("distanceInput");
+
+const distanceUnit =
+    getElement("distanceUnit");
+
+const radiusInput =
+    getElement("radiusInput");
+
+const radiusHint =
+    getElement("radiusHint");
+
+const locationField =
+    getElement("locationField");
+
+const smartField =
+    getElement("smartField");
+
+const distanceField =
+    getElement("distanceField");
+
+const placeModeBtn =
+    getElement("placeModeBtn");
+
+const travelModeBtn =
+    getElement("travelModeBtn");
+
+const smartModeBtn =
+    getElement("smartModeBtn");
+
+const gatesContainer =
+    getElement("gatesContainer");
+
+const emptyState =
+    getElement("emptyState");
+
+const gateCount =
+    getElement("gateCount");
+
+const systemStatus =
+    getElement("systemStatus");
+
+const gpsStatus =
+    getElement("gpsStatus");
+
+const latitude =
+    getElement("latitude");
+
+const longitude =
+    getElement("longitude");
+
+const accuracy =
+    getElement("accuracy");
+
+
+/* =========================================================
+   SAFE TEXT UPDATE
+========================================================= */
+
+function setText(
+    element,
+    value
+) {
+
+    if (element) {
+
+        element.textContent =
+            value;
+
+    }
+
+}
+
+
+/* =========================================================
+   MODE SELECTION
 ========================================================= */
 
 function setMode(mode) {
 
-    selectedMode = mode;
+    selectedMode =
+        mode;
 
 
     /*
-       Remove active state from all buttons.
+       Remove active state safely.
     */
 
-    placeModeBtn.classList.remove(
-        "active"
-    );
+    if (placeModeBtn) {
 
-    travelModeBtn.classList.remove(
-        "active"
-    );
+        placeModeBtn.classList.remove(
+            "active"
+        );
 
-    smartModeBtn.classList.remove(
-        "active"
-    );
+    }
+
+
+    if (travelModeBtn) {
+
+        travelModeBtn.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    if (smartModeBtn) {
+
+        smartModeBtn.classList.remove(
+            "active"
+        );
+
+    }
 
 
     /*
-       Activate selected mode.
+       Activate selected button.
     */
 
-    if (mode === "place") {
+    if (
+        mode === "place" &&
+        placeModeBtn
+    ) {
 
         placeModeBtn.classList.add(
             "active"
@@ -163,7 +211,11 @@ function setMode(mode) {
 
     }
 
-    else if (mode === "travel") {
+
+    if (
+        mode === "travel" &&
+        travelModeBtn
+    ) {
 
         travelModeBtn.classList.add(
             "active"
@@ -171,7 +223,11 @@ function setMode(mode) {
 
     }
 
-    else if (mode === "smart") {
+
+    if (
+        mode === "smart" &&
+        smartModeBtn
+    ) {
 
         smartModeBtn.classList.add(
             "active"
@@ -184,23 +240,38 @@ function setMode(mode) {
        NEAR A PLACE
     */
 
-    if (mode === "place") {
+    if (
+        mode === "place"
+    ) {
 
-        locationField.classList.remove(
-            "hidden"
+        if (locationField) {
+
+            locationField.classList.remove(
+                "hidden"
+            );
+
+        }
+
+        if (distanceField) {
+
+            distanceField.classList.remove(
+                "hidden"
+            );
+
+        }
+
+        if (smartField) {
+
+            smartField.classList.add(
+                "hidden"
+            );
+
+        }
+
+        setText(
+            radiusHint,
+            "Open when you enter this distance from the saved place."
         );
-
-        distanceField.classList.remove(
-            "hidden"
-        );
-
-        smartField.classList.add(
-            "hidden"
-        );
-
-
-        radiusHint.textContent =
-            "Trigger when you enter the selected radius.";
 
     }
 
@@ -209,23 +280,38 @@ function setMode(mode) {
        DISTANCE TRAVELLED
     */
 
-    else if (mode === "travel") {
+    else if (
+        mode === "travel"
+    ) {
 
-        locationField.classList.remove(
-            "hidden"
+        if (locationField) {
+
+            locationField.classList.remove(
+                "hidden"
+            );
+
+        }
+
+        if (distanceField) {
+
+            distanceField.classList.remove(
+                "hidden"
+            );
+
+        }
+
+        if (smartField) {
+
+            smartField.classList.add(
+                "hidden"
+            );
+
+        }
+
+        setText(
+            radiusHint,
+            "Counts the actual distance you travel from this point."
         );
-
-        distanceField.classList.remove(
-            "hidden"
-        );
-
-        smartField.classList.add(
-            "hidden"
-        );
-
-
-        radiusHint.textContent =
-            "Measures the actual path travelled from here.";
 
     }
 
@@ -234,23 +320,38 @@ function setMode(mode) {
        SMART
     */
 
-    else if (mode === "smart") {
+    else if (
+        mode === "smart"
+    ) {
 
-        locationField.classList.remove(
-            "hidden"
+        if (locationField) {
+
+            locationField.classList.remove(
+                "hidden"
+            );
+
+        }
+
+        if (distanceField) {
+
+            distanceField.classList.add(
+                "hidden"
+            );
+
+        }
+
+        if (smartField) {
+
+            smartField.classList.remove(
+                "hidden"
+            );
+
+        }
+
+        setText(
+            radiusHint,
+            "Use a saved location as the spatial anchor."
         );
-
-        distanceField.classList.add(
-            "hidden"
-        );
-
-        smartField.classList.remove(
-            "hidden"
-        );
-
-
-        radiusHint.textContent =
-            "Smart location mode will use the saved GPS point.";
 
     }
 
@@ -263,30 +364,40 @@ function setMode(mode) {
 
 function detectLocation() {
 
-    if (!navigator.geolocation) {
+    if (
+        !navigator.geolocation
+    ) {
 
-        systemStatus.textContent =
-            "GPS NOT SUPPORTED";
+        setText(
+            systemStatus,
+            "GPS NOT SUPPORTED"
+        );
 
-        gpsStatus.textContent =
-            "GPS UNAVAILABLE";
+        setText(
+            gpsStatus,
+            "GPS UNAVAILABLE"
+        );
 
         return;
 
     }
 
 
-    systemStatus.textContent =
-        "LOCATING...";
+    setText(
+        systemStatus,
+        "LOCATING..."
+    );
 
 
-    gpsStatus.textContent =
-        "ACQUIRING SIGNAL";
+    setText(
+        gpsStatus,
+        "ACQUIRING SIGNAL"
+    );
 
 
     navigator.geolocation.getCurrentPosition(
 
-        position => {
+        function(position) {
 
             processGPSPosition(
                 position
@@ -295,7 +406,7 @@ function detectLocation() {
         },
 
 
-        error => {
+        function(error) {
 
             handleLocationError(
                 error
@@ -330,21 +441,43 @@ function processGPSPosition(
     position
 ) {
 
+    if (
+        !position ||
+        !position.coords
+    ) {
+
+        return;
+
+    }
+
+
     const coords =
         position.coords;
 
 
+    const lat =
+        Number(
+            coords.latitude
+        );
+
+    const lon =
+        Number(
+            coords.longitude
+        );
+
+    const gpsAccuracy =
+        Number(
+            coords.accuracy
+        );
+
+
     /*
-       Ignore obviously invalid GPS readings.
+       Reject invalid coordinates.
     */
 
     if (
-        !Number.isFinite(
-            coords.latitude
-        ) ||
-        !Number.isFinite(
-            coords.longitude
-        )
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lon)
     ) {
 
         return;
@@ -355,16 +488,16 @@ function processGPSPosition(
     const reading = {
 
         latitude:
-            coords.latitude,
+            lat,
 
         longitude:
-            coords.longitude,
+            lon,
 
         accuracy:
             Number.isFinite(
-                coords.accuracy
+                gpsAccuracy
             )
-                ? coords.accuracy
+                ? gpsAccuracy
                 : 999,
 
         timestamp:
@@ -374,119 +507,82 @@ function processGPSPosition(
 
 
     /*
-       Keep recent GPS readings.
+       Keep only a few recent readings.
     */
 
-    locationHistory.push(
+    gpsHistory.push(
         reading
     );
 
 
     if (
-        locationHistory.length >
-        GPS_HISTORY_SIZE
+        gpsHistory.length >
+        MAX_GPS_HISTORY
     ) {
 
-        locationHistory.shift();
+        gpsHistory.shift();
 
     }
 
 
     /*
-       Calculate a stabilized position.
+       Use the newest GPS reading directly.
+
+       IMPORTANT:
+
+       We are NOT using the old averaging
+       method for travel distance.
+
+       Averaging GPS positions can hide
+       small movements.
+
+       The travel engine needs the actual
+       sequence of GPS points.
     */
 
-    const stableLocation =
-        getStableLocation();
+    currentLocation = {
 
+        latitude:
+            reading.latitude,
 
-    if (!stableLocation) {
-        return;
-    }
+        longitude:
+            reading.longitude,
 
+        accuracy:
+            reading.accuracy
 
-    currentLocation =
-        stableLocation;
+    };
 
 
     updateLocationDisplay(
-        stableLocation
+        currentLocation
     );
 
 
     /*
-       Calculate travelled distance
-       before replacing the previous point.
+       THIS is the important part.
+
+       Every travel gate calculates its
+       own movement between GPS readings.
     */
 
-    updateTravelledDistance(
-        stableLocation
+    updateTravelGates(
+        reading
     );
 
 
     /*
-       Check every active gate.
+       Check proximity-based gates.
     */
 
     checkGates();
 
-}
 
+    /*
+       Save the latest state.
+    */
 
-/* =========================================================
-   STABLE GPS LOCATION
-========================================================= */
-
-function getStableLocation() {
-
-    if (
-        locationHistory.length === 0
-    ) {
-
-        return null;
-
-    }
-
-
-    let latSum = 0;
-
-    let lonSum = 0;
-
-    let accuracySum = 0;
-
-
-    locationHistory.forEach(
-        reading => {
-
-            latSum +=
-                reading.latitude;
-
-            lonSum +=
-                reading.longitude;
-
-            accuracySum +=
-                reading.accuracy;
-
-        }
-    );
-
-
-    const count =
-        locationHistory.length;
-
-
-    return {
-
-        latitude:
-            latSum / count,
-
-        longitude:
-            lonSum / count,
-
-        accuracy:
-            accuracySum / count
-
-    };
+    saveGates();
 
 }
 
@@ -499,238 +595,288 @@ function updateLocationDisplay(
     location
 ) {
 
-    latitude.textContent =
-        location.latitude.toFixed(6);
+    if (!location) {
+        return;
+    }
 
 
-    longitude.textContent =
-        location.longitude.toFixed(6);
+    setText(
+        latitude,
+        location.latitude.toFixed(6)
+    );
 
 
-    accuracy.textContent =
+    setText(
+        longitude,
+        location.longitude.toFixed(6)
+    );
+
+
+    setText(
+        accuracy,
         `${Math.round(
             location.accuracy
-        )} m`;
+        )} m`
+    );
 
 
-    locationInput.value =
-        `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+    if (locationInput) {
+
+        locationInput.value =
+            `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+
+    }
 
 
-    systemStatus.textContent =
-        "SYSTEM ONLINE";
+    setText(
+        systemStatus,
+        "SYSTEM ONLINE"
+    );
 
 
-    gpsStatus.textContent =
-        "GPS LOCKED";
+    setText(
+        gpsStatus,
+        "GPS LOCKED"
+    );
 
 }
 
 
 /* =========================================================
-   TRAVELLED DISTANCE
+   UPDATE TRAVEL GATES
 ========================================================= */
 
-function updateTravelledDistance(
-    location
+function updateTravelGates(
+    reading
 ) {
 
-    /*
-       First GPS reading establishes
-       the starting point.
-    */
+    gates.forEach(
+        function(gate) {
 
-    if (!lastGPSPoint) {
+            /*
+               Only travel gates use
+               travelled-distance accumulation.
+            */
 
-        lastGPSPoint = {
+            if (
+                gate.mode !== "travel"
+            ) {
 
-            latitude:
-                location.latitude,
+                return;
 
-            longitude:
-                location.longitude
-
-        };
-
-        return;
-
-    }
+            }
 
 
-    /*
-       Calculate movement since the
-       previous stabilized GPS point.
-    */
+            if (
+                gate.completed
+            ) {
 
-    const movement =
-        calculateDistance(
+                return;
 
-            lastGPSPoint.latitude,
-
-            lastGPSPoint.longitude,
-
-            location.latitude,
-
-            location.longitude
-
-        );
+            }
 
 
-    /*
-       Ignore tiny GPS noise.
+            /*
+               First reading after gate creation.
 
-       This prevents a stationary phone
-       from accumulating fake walking distance.
-    */
+               This becomes the starting point.
+            */
 
-    const minimumMovement =
-        Math.max(
-            3,
-            Math.min(
-                location.accuracy * 0.25,
-                8
-            )
-        );
+            if (
+                !gate.lastTravelPoint
+            ) {
 
+                gate.lastTravelPoint = {
 
-    if (
-        movement >=
-        minimumMovement
-    ) {
+                    latitude:
+                        reading.latitude,
 
-        gates.forEach(
-            gate => {
+                    longitude:
+                        reading.longitude,
 
-                if (
-                    gate.mode !== "travel"
-                ) {
-                    return;
-                }
+                    timestamp:
+                        reading.timestamp
+
+                };
 
 
                 /*
-                   Accumulate actual path
-                   distance for travel gates.
+                   Make sure old/broken values
+                   don't survive.
                 */
 
-                gate.travelledDistance =
-                    (
-                        gate.travelledDistance || 0
-                    ) + movement;
+                if (
+                    !Number.isFinite(
+                        gate.travelledDistance
+                    )
+                ) {
+
+                    gate.travelledDistance =
+                        0;
+
+                }
+
+
+                return;
 
             }
-        );
 
 
-        saveGates();
+            /*
+               Calculate movement from the
+               previous GPS point to THIS GPS point.
+            */
 
-    }
+            const movement =
+                calculateDistance(
+
+                    gate.lastTravelPoint.latitude,
+
+                    gate.lastTravelPoint.longitude,
+
+                    reading.latitude,
+
+                    reading.longitude
+
+                );
 
 
-    lastGPSPoint = {
+            /*
+               Calculate time between readings.
+            */
 
-        latitude:
-            location.latitude,
+            const elapsedSeconds =
+                Math.max(
 
-        longitude:
-            location.longitude
+                    0.1,
 
-    };
+                    (
+                        reading.timestamp -
+                        gate.lastTravelPoint.timestamp
+                    ) / 1000
+
+                );
+
+
+            /*
+               Reject impossible GPS jumps.
+
+               Example:
+
+               A phone suddenly "moves"
+               800 metres in one second.
+
+               That's almost certainly GPS noise.
+            */
+
+            const speed =
+                movement /
+                elapsedSeconds;
+
+
+            const MAX_REASONABLE_SPEED =
+                60;
+
+
+            if (
+                speed <=
+                MAX_REASONABLE_SPEED
+            ) {
+
+                /*
+                   Don't throw away genuine
+                   small movements.
+
+                   A 1 m, 2 m or 3 m movement
+                   is still movement.
+
+                   This is particularly important
+                   for your 2 m test.
+                */
+
+                if (
+                    movement >= 0.8
+                ) {
+
+                    gate.travelledDistance =
+                        (
+                            Number(
+                                gate.travelledDistance
+                            ) || 0
+                        ) + movement;
+
+                }
+
+            }
+
+
+            /*
+               ALWAYS advance the previous point.
+
+               This is critical.
+
+               Even if one GPS reading is bad,
+               the next reading is compared to
+               the latest real point instead of
+               repeatedly comparing against an
+               ancient location.
+            */
+
+            gate.lastTravelPoint = {
+
+                latitude:
+                    reading.latitude,
+
+                longitude:
+                    reading.longitude,
+
+                timestamp:
+                    reading.timestamp
+
+            };
+
+
+            /*
+               Check whether the gate has
+               reached its target.
+            */
+
+            if (
+                gate.travelledDistance >=
+                Number(
+                    gate.distance
+                )
+            ) {
+
+                if (
+                    !gate.triggered
+                ) {
+
+                    gate.triggered =
+                        true;
+
+                    gate.open =
+                        true;
+
+                    gate.openedAt =
+                        Date.now();
+
+
+                    triggerArrival(
+                        gate
+                    );
+
+                }
+
+            }
+
+        }
+    );
 
 }
 
 
 /* =========================================================
-   LOCATION ERROR
-========================================================= */
-
-function handleLocationError(
-    error
-) {
-
-    if (
-        error.code === 1
-    ) {
-
-        systemStatus.textContent =
-            "LOCATION DENIED";
-
-        gpsStatus.textContent =
-            "PERMISSION DENIED";
-
-    }
-
-    else if (
-        error.code === 2
-    ) {
-
-        systemStatus.textContent =
-            "LOCATION UNAVAILABLE";
-
-        gpsStatus.textContent =
-            "SIGNAL UNAVAILABLE";
-
-    }
-
-    else if (
-        error.code === 3
-    ) {
-
-        systemStatus.textContent =
-            "LOCATION TIMEOUT";
-
-        gpsStatus.textContent =
-            "SIGNAL TIMEOUT";
-
-    }
-
-    else {
-
-        systemStatus.textContent =
-            "LOCATION ERROR";
-
-        gpsStatus.textContent =
-            "GPS ERROR";
-
-    }
-
-}
-
-
-/* =========================================================
-   DISTANCE CONVERSION
-========================================================= */
-
-function getDistanceInMeters() {
-
-    const value =
-        Number(
-            distanceInput.value
-        );
-
-
-    if (
-        !Number.isFinite(value) ||
-        value <= 0
-    ) {
-
-        return null;
-
-    }
-
-
-    if (
-        distanceUnit.value === "km"
-    ) {
-
-        return value * 1000;
-
-    }
-
-
-    return value;
-
-    }/* =========================================================
    HAVERSINE DISTANCE
 ========================================================= */
 
@@ -741,52 +887,160 @@ function calculateDistance(
     lon2
 ) {
 
-    const earthRadius = 6371000;
+    const EARTH_RADIUS =
+        6371000;
+
 
     const lat1Rad =
-        lat1 * Math.PI / 180;
+        lat1 *
+        Math.PI /
+        180;
+
 
     const lat2Rad =
-        lat2 * Math.PI / 180;
+        lat2 *
+        Math.PI /
+        180;
+
 
     const deltaLat =
-        (lat2 - lat1) *
-        Math.PI / 180;
+        (
+            lat2 -
+            lat1
+        ) *
+        Math.PI /
+        180;
+
 
     const deltaLon =
-        (lon2 - lon1) *
-        Math.PI / 180;
+        (
+            lon2 -
+            lon1
+        ) *
+        Math.PI /
+        180;
 
 
     const a =
-        Math.sin(deltaLat / 2) ** 2 +
+        Math.sin(
+            deltaLat / 2
+        ) ** 2 +
 
-        Math.cos(lat1Rad) *
-        Math.cos(lat2Rad) *
-        Math.sin(deltaLon / 2) ** 2;
+        Math.cos(
+            lat1Rad
+        ) *
+
+        Math.cos(
+            lat2Rad
+        ) *
+
+        Math.sin(
+            deltaLon / 2
+        ) ** 2;
 
 
     const c =
         2 *
         Math.atan2(
+
             Math.sqrt(a),
-            Math.sqrt(1 - a)
+
+            Math.sqrt(
+                1 - a
+            )
+
         );
 
 
-    return earthRadius * c;
+    return (
+        EARTH_RADIUS *
+        c
+    );
 
 }
 
 
 /* =========================================================
+   DISTANCE INPUT → METERS
+========================================================= */
+
+function getDistanceInMeters() {
+
+    /*
+       If the newer distance input exists,
+       use it.
+    */
+
+    if (distanceInput) {
+
+        const value =
+            Number(
+                distanceInput.value
+            );
+
+
+        if (
+            !Number.isFinite(value) ||
+            value <= 0
+        ) {
+
+            return null;
+
+        }
+
+
+        if (
+            distanceUnit &&
+            distanceUnit.value === "km"
+        ) {
+
+            return value * 1000;
+
+        }
+
+
+        return value;
+
+    }
+
+
+    /*
+       Fallback for the original NEXUS
+       radius selector.
+    */
+
+    if (radiusInput) {
+
+        const value =
+            Number(
+                radiusInput.value
+            );
+
+
+        if (
+            Number.isFinite(value) &&
+            value > 0
+        ) {
+
+            return value;
+
+        }
+
+    }
+
+
+    return null;
+
+           }/* =========================================================
    CREATE GATE
 ========================================================= */
 
 function createGate() {
 
     const task =
-        taskInput.value.trim();
+        taskInput
+            ? taskInput.value.trim()
+            : "";
 
 
     if (!task) {
@@ -795,7 +1049,9 @@ function createGate() {
             "Enter a task first."
         );
 
-        taskInput.focus();
+        if (taskInput) {
+            taskInput.focus();
+        }
 
         return;
 
@@ -803,13 +1059,11 @@ function createGate() {
 
 
     /*
-       Smart mode currently uses
-       the GPS point as its spatial anchor.
+       A GPS position is required because
+       every NEXUS gate needs a spatial anchor.
     */
 
-    if (
-        !currentLocation
-    ) {
+    if (!currentLocation) {
 
         alert(
             "Detect your location before creating a gate."
@@ -817,18 +1071,29 @@ function createGate() {
 
         detectLocation();
 
+        startGPSWatch();
+
         return;
 
     }
 
 
-    /*
-       Distance modes require a valid
-       distance value.
-    */
-
     let distance = null;
 
+
+    /*
+       PLACE and TRAVEL modes both
+       accept completely flexible distances.
+
+       Examples:
+
+       2 m
+       10 m
+       40 m
+       110 m
+       500 m
+       1.5 km
+    */
 
     if (
         selectedMode === "place" ||
@@ -847,7 +1112,9 @@ function createGate() {
                 "Enter a valid distance."
             );
 
-            distanceInput.focus();
+            if (distanceInput) {
+                distanceInput.focus();
+            }
 
             return;
 
@@ -857,62 +1124,87 @@ function createGate() {
 
 
     /*
-       Prevent accidental duplicate gates.
+       Create the gate.
     */
 
     const gate = {
 
         id:
-            Date.now(),
+            Date.now() +
+            Math.random(),
+
 
         task:
-
             task,
 
-        mode:
 
+        mode:
             selectedMode,
 
-        latitude:
 
+        latitude:
             currentLocation.latitude,
 
-        longitude:
 
+        longitude:
             currentLocation.longitude,
 
-        accuracy:
 
+        accuracy:
             currentLocation.accuracy,
 
-        distance:
 
+        distance:
             distance,
 
-        smartPlace:
 
+        smartPlace:
             selectedMode === "smart"
-                ? smartInput.value.trim()
+                ? (
+                    smartInput
+                        ? smartInput.value.trim()
+                        : ""
+                  )
                 : "",
 
-        travelledDistance:
 
+        /*
+           Travel gates begin at ZERO.
+        */
+
+        travelledDistance:
             0,
 
-        triggered:
 
+        /*
+           This is intentionally null.
+
+           The first GPS reading AFTER the
+           gate is created establishes the
+           starting point for travelled distance.
+        */
+
+        lastTravelPoint:
+            null,
+
+
+        currentDistance:
+            null,
+
+
+        triggered:
             false,
+
 
         open:
-
             false,
+
 
         completed:
-
             false,
 
-        createdAt:
 
+        createdAt:
             Date.now()
 
     };
@@ -929,28 +1221,56 @@ function createGate() {
 
 
     /*
-       Reset the form after creation.
+       Keep GPS tracking active.
     */
 
-    taskInput.value = "";
-
-    smartInput.value = "";
-
-
-    systemStatus.textContent =
-        "GATE CREATED";
+    startGPSWatch();
 
 
     /*
-       Small delay before returning
-       the status to normal.
+       Ask for notifications now so the
+       user doesn't have to wait until
+       the first trigger.
     */
 
-    setTimeout(
-        () => {
+    requestNotificationPermission();
 
-            systemStatus.textContent =
-                "SYSTEM ONLINE";
+
+    /*
+       Reset task text.
+
+       Do NOT reset the location.
+    */
+
+    if (taskInput) {
+
+        taskInput.value =
+            "";
+
+    }
+
+
+    if (smartInput) {
+
+        smartInput.value =
+            "";
+
+    }
+
+
+    setText(
+        systemStatus,
+        "GATE CREATED"
+    );
+
+
+    setTimeout(
+        function() {
+
+            setText(
+                systemStatus,
+                "SYSTEM ONLINE"
+            );
 
         },
         1800
@@ -975,7 +1295,7 @@ function checkGates() {
 
 
     gates.forEach(
-        gate => {
+        function(gate) {
 
             if (
                 gate.completed
@@ -1003,6 +1323,12 @@ function checkGates() {
 
             /*
                DISTANCE TRAVELLED
+
+               The actual accumulation is
+               handled by updateTravelGates().
+
+               Here we only keep the UI/state
+               synchronized.
             */
 
             else if (
@@ -1017,7 +1343,7 @@ function checkGates() {
 
 
             /*
-               SMART
+               SMART MODE
             */
 
             else if (
@@ -1034,20 +1360,27 @@ function checkGates() {
     );
 
 
-    saveGates();
-
     renderGates();
 
 }
 
 
 /* =========================================================
-   NEAR-A-PLACE GATE
+   NEAR A PLACE
 ========================================================= */
 
 function checkPlaceGate(
     gate
 ) {
+
+    if (
+        !currentLocation
+    ) {
+
+        return;
+
+    }
+
 
     const distance =
         calculateDistance(
@@ -1068,24 +1401,35 @@ function checkPlaceGate(
 
 
     /*
-       The GPS reading itself has uncertainty.
+       IMPORTANT:
 
-       Don't pretend that a 10 m gate can be
-       perfectly precise when the phone says
-       accuracy is 25 m.
+       This mode measures distance FROM
+       the saved location.
 
-       We still trigger according to the user's
-       requested radius, but the UI can show
-       the GPS accuracy.
+       It does NOT measure the path
+       travelled by the user.
+
+       Therefore:
+
+       Start → left → right
+
+       can increase/decrease depending
+       on where the user is relative
+       to the saved point.
+
+       That is correct behavior for
+       "NEAR A PLACE".
     */
 
     const inside =
         distance <=
-        gate.distance;
+        Number(
+            gate.distance
+        );
 
 
     /*
-       ENTERING THE GATE
+       ARRIVAL
     */
 
     if (
@@ -1093,11 +1437,14 @@ function checkPlaceGate(
         !gate.open
     ) {
 
-        gate.open = true;
+        gate.open =
+            true;
 
-        gate.triggered = true;
+        gate.triggered =
+            true;
 
-        gate.openedAt = Date.now();
+        gate.openedAt =
+            Date.now();
 
 
         triggerArrival(
@@ -1108,7 +1455,7 @@ function checkPlaceGate(
 
 
     /*
-       LEAVING THE GATE
+       DEPARTURE
     */
 
     else if (
@@ -1116,9 +1463,11 @@ function checkPlaceGate(
         gate.open
     ) {
 
-        gate.open = false;
+        gate.open =
+            false;
 
-        gate.closedAt = Date.now();
+        gate.closedAt =
+            Date.now();
 
 
         triggerDeparture(
@@ -1131,37 +1480,70 @@ function checkPlaceGate(
 
 
 /* =========================================================
-   DISTANCE-TRAVELLED GATE
+   DISTANCE TRAVELLED CHECK
 ========================================================= */
 
 function checkTravelGate(
     gate
 ) {
 
-    /*
-       Once the user has travelled
-       the requested amount, trigger it.
+    if (
+        gate.completed
+    ) {
 
-       Unlike a place gate, this doesn't
-       care where the user ends up.
+        return;
+
+    }
+
+
+    /*
+       Protect against old localStorage
+       data from the previous version.
     */
 
     if (
-        !gate.triggered &&
-        gate.travelledDistance >=
-        gate.distance
+        !Number.isFinite(
+            gate.travelledDistance
+        )
     ) {
 
-        gate.triggered = true;
+        gate.travelledDistance =
+            0;
 
-        gate.open = true;
-
-        gate.openedAt = Date.now();
+    }
 
 
-        triggerArrival(
-            gate
-        );
+    /*
+       If the target has been reached,
+       make sure the gate is open.
+    */
+
+    if (
+        gate.travelledDistance >=
+        Number(
+            gate.distance
+        )
+    ) {
+
+        if (
+            !gate.triggered
+        ) {
+
+            gate.triggered =
+                true;
+
+            gate.open =
+                true;
+
+            gate.openedAt =
+                Date.now();
+
+
+            triggerArrival(
+                gate
+            );
+
+        }
 
     }
 
@@ -1177,26 +1559,35 @@ function checkSmartGate(
 ) {
 
     /*
-       IMPORTANT:
+       A normal browser GPS API does not
+       understand words like:
 
-       A browser cannot magically know
-       that coordinates correspond to
-       "airport", "school", "restaurant",
-       etc.
+       "airport"
+       "school"
+       "restaurant"
 
-       Until we connect a place/geocoding
-       service, Smart mode uses the current
-       saved GPS anchor.
+       by itself.
 
-       This keeps the engine functional
-       without pretending we have a
-       location database.
+       Until a Places/geocoding service
+       is connected, SMART uses a
+       practical GPS anchor.
 
-       The natural-language field is
-       therefore currently descriptive.
+       We keep this isolated so it can
+       later be replaced by real place
+       lookup without changing the
+       rest of NEXUS.
     */
 
-    const smartRadius =
+    if (
+        !currentLocation
+    ) {
+
+        return;
+
+    }
+
+
+    const SMART_RADIUS =
         50;
 
 
@@ -1218,17 +1609,28 @@ function checkSmartGate(
         distance;
 
 
-    if (
+    const inside =
         distance <=
-        smartRadius &&
+        SMART_RADIUS;
+
+
+    /*
+       ARRIVAL
+    */
+
+    if (
+        inside &&
         !gate.open
     ) {
 
-        gate.open = true;
+        gate.open =
+            true;
 
-        gate.triggered = true;
+        gate.triggered =
+            true;
 
-        gate.openedAt = Date.now();
+        gate.openedAt =
+            Date.now();
 
 
         triggerArrival(
@@ -1238,15 +1640,20 @@ function checkSmartGate(
     }
 
 
+    /*
+       DEPARTURE
+    */
+
     else if (
-        distance >
-        smartRadius &&
+        !inside &&
         gate.open
     ) {
 
-        gate.open = false;
+        gate.open =
+            false;
 
-        gate.closedAt = Date.now();
+        gate.closedAt =
+            Date.now();
 
 
         triggerDeparture(
@@ -1266,26 +1673,30 @@ function triggerArrival(
     gate
 ) {
 
-    systemStatus.textContent =
-        "GATE OPEN";
+    setText(
+        systemStatus,
+        "GATE OPEN"
+    );
 
 
     /*
-       Play the NEXUS arrival sound.
+       Audio alarm.
     */
 
     playArrivalSound();
 
 
     /*
-       Ask the device to vibrate.
+       Haptic feedback.
     */
 
     vibrateDevice(
         [
-            180,
+            200,
             100,
-            180
+            200,
+            100,
+            300
         ]
     );
 
@@ -1301,20 +1712,14 @@ function triggerArrival(
 
 
     /*
-       Bring attention to the
-       relevant gate card.
-    */
-
-    renderGates();
-
-
-    /*
-       Attempt to keep the browser
-       visually focused on the event.
+       Make the browser tab obvious.
     */
 
     document.title =
         "● GATE OPEN — NEXUS";
+
+
+    renderGates();
 
 }
 
@@ -1327,8 +1732,10 @@ function triggerDeparture(
     gate
 ) {
 
-    systemStatus.textContent =
-        "GATE CLOSED";
+    setText(
+        systemStatus,
+        "GATE CLOSED"
+    );
 
 
     playDepartureSound();
@@ -1336,9 +1743,9 @@ function triggerDeparture(
 
     vibrateDevice(
         [
-            100,
+            120,
             80,
-            100
+            120
         ]
     );
 
@@ -1349,18 +1756,17 @@ function triggerDeparture(
     );
 
 
-    renderGates();
-
-
     document.title =
         "NEXUS GATE";
 
 
     setTimeout(
-        () => {
+        function() {
 
-            systemStatus.textContent =
-                "SYSTEM ONLINE";
+            setText(
+                systemStatus,
+                "SYSTEM ONLINE"
+            );
 
         },
         1800
@@ -1390,7 +1796,7 @@ function vibrateDevice(
         } catch (error) {
 
             console.log(
-                "Vibration unavailable."
+                "NEXUS: vibration unavailable."
             );
 
         }
@@ -1401,7 +1807,7 @@ function vibrateDevice(
 
 
 /* =========================================================
-   AUDIO ENGINE
+   AUDIO CONTEXT
 ========================================================= */
 
 let audioContext = null;
@@ -1409,21 +1815,23 @@ let audioContext = null;
 
 function getAudioContext() {
 
+    const AudioContext =
+        window.AudioContext ||
+        window.webkitAudioContext;
+
+
+    if (
+        !AudioContext
+    ) {
+
+        return null;
+
+    }
+
+
     if (
         !audioContext
     ) {
-
-        const AudioContext =
-            window.AudioContext ||
-            window.webkitAudioContext;
-
-
-        if (!AudioContext) {
-
-            return null;
-
-        }
-
 
         audioContext =
             new AudioContext();
@@ -1436,7 +1844,17 @@ function getAudioContext() {
         "suspended"
     ) {
 
-        audioContext.resume();
+        audioContext
+            .resume()
+            .catch(
+                function() {
+
+                    console.log(
+                        "NEXUS: audio resume blocked."
+                    );
+
+                }
+            );
 
     }
 
@@ -1481,7 +1899,7 @@ function playArrivalSound() {
 
     oscillator.frequency
         .setValueAtTime(
-            660,
+            620,
             now
         );
 
@@ -1502,15 +1920,15 @@ function playArrivalSound() {
 
     gain.gain
         .exponentialRampToValueAtTime(
-            0.22,
-            now + 0.02
+            0.25,
+            now + 0.025
         );
 
 
     gain.gain
         .exponentialRampToValueAtTime(
             0.0001,
-            now + 0.45
+            now + 0.5
         );
 
 
@@ -1530,7 +1948,7 @@ function playArrivalSound() {
 
 
     oscillator.stop(
-        now + 0.5
+        now + 0.55
     );
 
 }
@@ -1571,14 +1989,14 @@ function playDepartureSound() {
 
     oscillator.frequency
         .setValueAtTime(
-            520,
+            500,
             now
         );
 
 
     oscillator.frequency
         .linearRampToValueAtTime(
-            330,
+            320,
             now + 0.25
         );
 
@@ -1592,15 +2010,15 @@ function playDepartureSound() {
 
     gain.gain
         .exponentialRampToValueAtTime(
-            0.18,
-            now + 0.02
+            0.2,
+            now + 0.025
         );
 
 
     gain.gain
         .exponentialRampToValueAtTime(
             0.0001,
-            now + 0.5
+            now + 0.55
         );
 
 
@@ -1620,50 +2038,11 @@ function playDepartureSound() {
 
 
     oscillator.stop(
-        now + 0.55
+        now + 0.6
     );
 
-}/* =========================================================
+       }/* =========================================================
    NOTIFICATIONS
-========================================================= */
-
-function showNotification(title, message) {
-
-    /*
-       Notifications require permission from
-       the user. Browsers also restrict them
-       unless the site is served over HTTPS.
-    */
-
-    if (
-        !("Notification" in window)
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        Notification.permission ===
-        "granted"
-    ) {
-
-        new Notification(
-            title,
-            {
-                body: message,
-                icon: "/favicon.ico"
-            }
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   REQUEST NOTIFICATION PERMISSION
 ========================================================= */
 
 async function requestNotificationPermission() {
@@ -1689,10 +2068,59 @@ async function requestNotificationPermission() {
         } catch (error) {
 
             console.log(
-                "Notification permission unavailable."
+                "NEXUS: notification permission unavailable."
             );
 
         }
+
+    }
+
+}
+
+
+/* =========================================================
+   SHOW NOTIFICATION
+========================================================= */
+
+function showNotification(
+    title,
+    message
+) {
+
+    if (
+        !("Notification" in window)
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        Notification.permission !==
+        "granted"
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        new Notification(
+            title,
+            {
+                body: message,
+                icon: "/favicon.ico"
+            }
+        );
+
+    } catch (error) {
+
+        console.log(
+            "NEXUS: notification failed."
+        );
 
     }
 
@@ -1709,8 +2137,10 @@ function startGPSWatch() {
         !navigator.geolocation
     ) {
 
-        gpsStatus.textContent =
-            "GPS UNSUPPORTED";
+        setText(
+            gpsStatus,
+            "GPS UNSUPPORTED"
+        );
 
         return;
 
@@ -1718,7 +2148,7 @@ function startGPSWatch() {
 
 
     /*
-       Don't create multiple GPS watchers.
+       Prevent duplicate watchers.
     */
 
     if (
@@ -1733,7 +2163,7 @@ function startGPSWatch() {
     gpsWatcher =
         navigator.geolocation.watchPosition(
 
-            position => {
+            function(position) {
 
                 processGPSPosition(
                     position
@@ -1742,7 +2172,7 @@ function startGPSWatch() {
             },
 
 
-            error => {
+            function(error) {
 
                 handleLocationError(
                     error
@@ -1757,7 +2187,7 @@ function startGPSWatch() {
                     true,
 
                 maximumAge:
-                    2000,
+                    1000,
 
                 timeout:
                     20000
@@ -1767,8 +2197,95 @@ function startGPSWatch() {
         );
 
 
-    gpsStatus.textContent =
-        "GPS WATCHING";
+    setText(
+        gpsStatus,
+        "GPS WATCHING"
+    );
+
+}
+
+
+/* =========================================================
+   GPS ERROR HANDLER
+========================================================= */
+
+function handleLocationError(
+    error
+) {
+
+    if (!error) {
+
+        return;
+
+    }
+
+
+    if (
+        error.code === 1
+    ) {
+
+        setText(
+            systemStatus,
+            "LOCATION DENIED"
+        );
+
+        setText(
+            gpsStatus,
+            "PERMISSION DENIED"
+        );
+
+        return;
+
+    }
+
+
+    if (
+        error.code === 2
+    ) {
+
+        setText(
+            systemStatus,
+            "LOCATION UNAVAILABLE"
+        );
+
+        setText(
+            gpsStatus,
+            "SIGNAL UNAVAILABLE"
+        );
+
+        return;
+
+    }
+
+
+    if (
+        error.code === 3
+    ) {
+
+        setText(
+            systemStatus,
+            "LOCATION TIMEOUT"
+        );
+
+        setText(
+            gpsStatus,
+            "SIGNAL TIMEOUT"
+        );
+
+        return;
+
+    }
+
+
+    setText(
+        systemStatus,
+        "LOCATION ERROR"
+    );
+
+    setText(
+        gpsStatus,
+        "GPS ERROR"
+    );
 
 }
 
@@ -1791,7 +2308,7 @@ function saveGates() {
     } catch (error) {
 
         console.log(
-            "Could not save gates:",
+            "NEXUS: Could not save gates.",
             error
         );
 
@@ -1809,12 +2326,18 @@ function formatDistance(
 ) {
 
     if (
-        !Number.isFinite(meters)
+        !Number.isFinite(
+            Number(meters)
+        )
     ) {
 
         return "--";
 
     }
+
+
+    meters =
+        Number(meters);
 
 
     if (
@@ -1837,7 +2360,9 @@ function formatDistance(
     ) {
 
         return (
-            Math.round(meters)
+            Math.round(
+                meters
+            )
         ) + " m";
 
     }
@@ -1858,34 +2383,21 @@ function getModeLabel(
     mode
 ) {
 
-    if (
-        mode === "place"
-    ) {
+    switch (mode) {
 
-        return "NEAR A PLACE";
+        case "place":
+            return "NEAR A PLACE";
 
-    }
+        case "travel":
+            return "DISTANCE TRAVELLED";
 
+        case "smart":
+            return "SMART";
 
-    if (
-        mode === "travel"
-    ) {
-
-        return "DISTANCE TRAVELLED";
-
-    }
-
-
-    if (
-        mode === "smart"
-    ) {
-
-        return "SMART";
+        default:
+            return "UNKNOWN";
 
     }
-
-
-    return "UNKNOWN";
 
 }
 
@@ -1896,10 +2408,17 @@ function getModeLabel(
 
 function renderGates() {
 
+    if (
+        !gatesContainer
+    ) {
+
+        return;
+
+    }
+
+
     /*
-       Remove old dynamically-created
-       gate cards while preserving
-       the empty state element.
+       Remove dynamically-created cards.
     */
 
     gatesContainer
@@ -1907,65 +2426,87 @@ function renderGates() {
             ".gate-card"
         )
         .forEach(
-            card => card.remove()
+            function(card) {
+
+                card.remove();
+
+            }
         );
 
-
-    /*
-       Update count.
-    */
 
     const activeGates =
         gates.filter(
-            gate =>
-                !gate.completed
+            function(gate) {
+
+                return !gate.completed;
+
+            }
         );
 
 
-    gateCount.textContent =
-        activeGates.length;
+    if (gateCount) {
+
+        gateCount.textContent =
+            activeGates.length;
+
+    }
 
 
     /*
-       Show empty state when there
-       are no active gates.
+       EMPTY STATE
     */
 
     if (
         activeGates.length === 0
     ) {
 
-        emptyState.style.display =
-            "block";
+        if (emptyState) {
+
+            emptyState.style.display =
+                "block";
+
+        }
 
         return;
 
     }
 
 
-    emptyState.style.display =
-        "none";
+    if (emptyState) {
+
+        emptyState.style.display =
+            "none";
+
+    }
 
 
     /*
-       Create cards.
+       Render newest gate first.
     */
 
-    activeGates.forEach(
-        gate => {
+    activeGates
+        .slice()
+        .reverse()
+        .forEach(
+            function(gate) {
 
-            const card =
-                createGateCard(
-                    gate
-                );
+                const card =
+                    createGateCard(
+                        gate
+                    );
 
 
-            gatesContainer.appendChild(
-                card
-            );
+                if (card) {
 
-        }
-    );
+                    gatesContainer
+                        .appendChild(
+                            card
+                        );
+
+                }
+
+            }
+        );
 
 }
 
@@ -1985,22 +2526,30 @@ function createGateCard(
 
 
     card.className =
-        "gate-card " +
-        (
-            gate.open
-                ? "open"
-                : "closed"
+        "gate-card";
+
+
+    if (
+        gate.open
+    ) {
+
+        card.classList.add(
+            "open"
         );
+
+    }
+
+    else {
+
+        card.classList.add(
+            "closed"
+        );
+
+    }
 
 
     /*
-       Current distance.
-
-       For travel gates we show
-       accumulated travelled distance.
-
-       For place/smart gates we show
-       distance from the anchor.
+       Determine displayed distance.
     */
 
     let currentDistance =
@@ -2012,7 +2561,9 @@ function createGateCard(
     ) {
 
         currentDistance =
-            gate.travelledDistance || 0;
+            Number(
+                gate.travelledDistance
+            ) || 0;
 
     }
 
@@ -2029,43 +2580,62 @@ function createGateCard(
 
 
     /*
-       Progress percentage.
+       Progress.
     */
 
-    let progress = 0;
+    let progress =
+        0;
 
 
     if (
-        gate.distance > 0
+        Number(gate.distance) > 0
     ) {
 
         progress =
             Math.min(
+
                 100,
+
                 (
                     currentDistance /
-                    gate.distance
+                    Number(gate.distance)
                 ) * 100
+
             );
 
     }
 
 
     /*
-       For a place gate, entering means
-       progress reaches 100%.
-
-       For a travel gate, progress is
-       actual accumulated movement.
+       State label.
     */
 
-    const stateText =
-        gate.open
-            ? "GATE OPEN"
-            : gate.triggered
-                ? "GATE CLOSED"
-                : "GATE ARMED";
+    let stateText =
+        "GATE ARMED";
 
+
+    if (
+        gate.open
+    ) {
+
+        stateText =
+            "GATE OPEN";
+
+    }
+
+    else if (
+        gate.triggered
+    ) {
+
+        stateText =
+            "GATE CLOSED";
+
+    }
+
+
+    /*
+       Build card.
+    */
 
     card.innerHTML = `
 
@@ -2079,7 +2649,11 @@ function createGateCard(
 
 
         <div class="gate-task">
-            ${escapeHTML(gate.task)}
+
+            ${escapeHTML(
+                gate.task
+            )}
+
         </div>
 
 
@@ -2104,13 +2678,17 @@ function createGateCard(
             <div class="spatial-stat">
 
                 <span>
-                    ${gate.mode === "travel"
-                        ? "TRAVELLED"
-                        : "DISTANCE"
+
+                    ${
+                        gate.mode === "travel"
+                            ? "TRAVELLED"
+                            : "RADIUS"
                     }
+
                 </span>
 
                 <strong>
+
                     ${
                         gate.mode === "travel"
                             ? formatDistance(
@@ -2120,54 +2698,78 @@ function createGateCard(
                                 gate.distance
                               )
                     }
+
                 </strong>
 
             </div>
-
 
         </div>
 
 
         ${
-            gate.mode === "smart"
+            gate.mode === "travel"
+
                 ? `
-                    <div class="gate-meta">
 
-                        <span>
-                            PLACE
-                        </span>
-
-                        <span>
-                            ${
-                                escapeHTML(
-                                    gate.smartPlace ||
-                                    "GPS ANCHOR"
-                                )
-                            }
-                        </span>
-
-                    </div>
-                  `
-                : ""
-        }
-
-
-        ${
-            gate.mode === "place"
-                ? `
                     <div class="proximity">
 
                         <div class="proximity-label">
 
                             <span>
-                                PROXIMITY
+                                JOURNEY PROGRESS
+                            </span>
+
+                            <span>
+                                ${Math.round(
+                                    progress
+                                )}%
+                            </span>
+
+                        </div>
+
+
+                        <div class="proximity-track">
+
+                            <div
+                                class="proximity-fill"
+                                style="
+                                    width:${progress}%;
+                                ">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                  `
+
+                : ""
+
+        }
+
+
+        ${
+            gate.mode === "place"
+
+                ? `
+
+                    <div class="proximity">
+
+                        <div class="proximity-label">
+
+                            <span>
+                                DISTANCE FROM PLACE
                             </span>
 
                             <span>
                                 ${
-                                    formatDistance(
+                                    Number.isFinite(
                                         gate.currentDistance
                                     )
+                                        ? formatDistance(
+                                            gate.currentDistance
+                                          )
+                                        : "--"
                                 }
                             </span>
 
@@ -2186,54 +2788,47 @@ function createGateCard(
                         </div>
 
                     </div>
+
                   `
+
                 : ""
+
         }
 
 
         ${
-            gate.mode === "travel"
+            gate.mode === "smart"
+
                 ? `
-                    <div class="proximity">
 
-                        <div class="proximity-label">
+                    <div class="gate-meta">
 
-                            <span>
-                                JOURNEY PROGRESS
-                            </span>
+                        <span>
+                            PLACE
+                        </span>
 
-                            <span>
-                                ${
-                                    Math.round(
-                                        progress
-                                    )
-                                }%
-                            </span>
-
-                        </div>
-
-
-                        <div class="proximity-track">
-
-                            <div
-                                class="proximity-fill"
-                                style="
-                                    width:${progress}%;
-                                ">
-                            </div>
-
-                        </div>
+                        <span>
+                            ${
+                                escapeHTML(
+                                    gate.smartPlace ||
+                                    "GPS ANCHOR"
+                                )
+                            }
+                        </span>
 
                     </div>
+
                   `
+
                 : ""
+
         }
 
 
         <div class="gate-meta">
 
             <span>
-                ACCURACY
+                GPS ACCURACY
             </span>
 
             <span>
@@ -2263,7 +2858,7 @@ function createGateCard(
 
 
     /*
-       Complete / destroy.
+       Complete button.
     */
 
     const completeButton =
@@ -2272,16 +2867,20 @@ function createGateCard(
         );
 
 
-    completeButton.addEventListener(
-        "click",
-        () => {
+    if (completeButton) {
 
-            completeGate(
-                gate.id
-            );
+        completeButton.addEventListener(
+            "click",
+            function() {
 
-        }
-    );
+                completeGate(
+                    gate.id
+                );
+
+            }
+        );
+
+    }
 
 
     return card;
@@ -2298,24 +2897,29 @@ function escapeHTML(
 ) {
 
     return String(
-        value
+        value ?? ""
     )
+
         .replace(
             /&/g,
             "&amp;"
         )
+
         .replace(
             /</g,
             "&lt;"
         )
+
         .replace(
             />/g,
             "&gt;"
         )
+
         .replace(
             /"/g,
             "&quot;"
         )
+
         .replace(
             /'/g,
             "&#039;"
@@ -2325,7 +2929,7 @@ function escapeHTML(
 
 
 /* =========================================================
-   COMPLETE GATE
+   COMPLETE + DESTROY
 ========================================================= */
 
 function completeGate(
@@ -2334,8 +2938,11 @@ function completeGate(
 
     const gate =
         gates.find(
-            item =>
-                item.id === id
+            function(item) {
+
+                return item.id === id;
+
+            }
         );
 
 
@@ -2345,6 +2952,12 @@ function completeGate(
 
     }
 
+
+    /*
+       NEXUS philosophy:
+
+       COMPLETE → DESTROY
+    */
 
     gate.completed =
         true;
@@ -2363,15 +2976,19 @@ function completeGate(
     renderGates();
 
 
-    systemStatus.textContent =
-        "GATE DESTROYED";
+    setText(
+        systemStatus,
+        "GATE DESTROYED"
+    );
 
 
     setTimeout(
-        () => {
+        function() {
 
-            systemStatus.textContent =
-                "SYSTEM ONLINE";
+            setText(
+                systemStatus,
+                "SYSTEM ONLINE"
+            );
 
         },
         1500
@@ -2384,125 +3001,222 @@ function completeGate(
    BUTTON EVENTS
 ========================================================= */
 
-locateBtn.addEventListener(
-    "click",
-    () => {
+if (locateBtn) {
 
-        detectLocation();
+    locateBtn.addEventListener(
+        "click",
+        function() {
 
-        startGPSWatch();
+            detectLocation();
 
-        requestNotificationPermission();
+            startGPSWatch();
 
-        /*
-           AudioContext generally needs
-           a user interaction to start.
-        */
+            requestNotificationPermission();
 
-        const ctx =
-            getAudioContext();
 
-        if (ctx) {
+            /*
+               Unlock audio after user interaction.
+            */
 
-            ctx.resume();
+            const ctx =
+                getAudioContext();
+
+
+            if (ctx) {
+
+                ctx.resume()
+                    .catch(
+                        function() {}
+                    );
+
+            }
 
         }
+    );
 
-    }
-);
-
-
-useLocationBtn.addEventListener(
-    "click",
-    () => {
-
-        detectLocation();
-
-        startGPSWatch();
-
-    }
-);
+}
 
 
-createGateBtn.addEventListener(
-    "click",
-    () => {
+if (useLocationBtn) {
 
-        createGate();
+    useLocationBtn.addEventListener(
+        "click",
+        function() {
 
-        /*
-           Start continuous tracking as
-           soon as a gate is created.
-        */
+            detectLocation();
 
-        startGPSWatch();
+            startGPSWatch();
 
-        requestNotificationPermission();
+        }
+    );
 
-    }
-);
+}
 
 
-/* =========================================================
-   MODE BUTTON EVENTS
-========================================================= */
+if (createGateBtn) {
 
-placeModeBtn.addEventListener(
-    "click",
-    () => {
+    createGateBtn.addEventListener(
+        "click",
+        function() {
 
-        setMode(
-            "place"
-        );
+            createGate();
 
-    }
-);
+            startGPSWatch();
 
+            requestNotificationPermission();
 
-travelModeBtn.addEventListener(
-    "click",
-    () => {
+        }
+    );
 
-        setMode(
-            "travel"
-        );
-
-    }
-);
-
-
-smartModeBtn.addEventListener(
-    "click",
-    () => {
-
-        setMode(
-            "smart"
-        );
-
-    }
-);
+}
 
 
 /* =========================================================
-   DISTANCE INPUT NORMALIZATION
+   MODE BUTTONS
 ========================================================= */
 
-distanceInput.addEventListener(
-    "input",
-    () => {
+if (placeModeBtn) {
+
+    placeModeBtn.addEventListener(
+        "click",
+        function() {
+
+            setMode(
+                "place"
+            );
+
+        }
+    );
+
+}
+
+
+if (travelModeBtn) {
+
+    travelModeBtn.addEventListener(
+        "click",
+        function() {
+
+            setMode(
+                "travel"
+            );
+
+        }
+    );
+
+}
+
+
+if (smartModeBtn) {
+
+    smartModeBtn.addEventListener(
+        "click",
+        function() {
+
+            setMode(
+                "smart"
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   ENTER KEY
+========================================================= */
+
+if (taskInput) {
+
+    taskInput.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                event.preventDefault();
+
+                createGate();
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   DISTANCE INPUT
+========================================================= */
+
+if (distanceInput) {
+
+    distanceInput.addEventListener(
+        "input",
+        function() {
+
+            const value =
+                Number(
+                    distanceInput.value
+                );
+
+
+            if (
+                value < 0
+            ) {
+
+                distanceInput.value =
+                    0;
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   PAGE VISIBILITY
+========================================================= */
+
+document.addEventListener(
+    "visibilitychange",
+    function() {
 
         /*
-           Prevent negative values.
+           When the user returns to the
+           website, immediately request
+           another GPS reading.
+
+           This helps when the browser
+           temporarily pauses GPS updates.
         */
 
         if (
-            Number(
-                distanceInput.value
-            ) < 0
+            document.visibilityState ===
+            "visible"
         ) {
 
-            distanceInput.value =
-                0;
+            if (
+                gates.some(
+                    function(gate) {
+
+                        return !gate.completed;
+
+                    }
+                )
+            ) {
+
+                startGPSWatch();
+
+                detectLocation();
+
+            }
 
         }
 
@@ -2511,7 +3225,7 @@ distanceInput.addEventListener(
 
 
 /* =========================================================
-   INITIALIZE
+   INITIALIZE NEXUS
 ========================================================= */
 
 function initializeNexus() {
@@ -2525,15 +3239,20 @@ function initializeNexus() {
 
 
     /*
-       If gates already exist, GPS tracking
-       should resume automatically after
-       the user has granted permission.
+       Resume GPS tracking if there are
+       existing active gates.
+
+       The browser will still require
+       location permission.
     */
 
     if (
         gates.some(
-            gate =>
-                !gate.completed
+            function(gate) {
+
+                return !gate.completed;
+
+            }
         )
     ) {
 
@@ -2542,18 +3261,22 @@ function initializeNexus() {
     }
 
 
-    systemStatus.textContent =
-        "SYSTEM READY";
+    setText(
+        systemStatus,
+        "SYSTEM READY"
+    );
 
 
-    gpsStatus.textContent =
-        "GPS OFFLINE";
+    setText(
+        gpsStatus,
+        "GPS OFFLINE"
+    );
 
 }
 
 
 /* =========================================================
-   START NEXUS
+   START
 ========================================================= */
 
 initializeNexus();
